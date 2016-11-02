@@ -1,0 +1,15 @@
+{
+  "name": "arrow/orm",
+  "type": "library",
+  "authors": [
+    {
+      "name": "Artur Kmera",
+      "email": "artur.kmera@3code.pl"
+    }
+  ],
+  "autoload": {
+    "classmap": [
+      "src/"
+    ]
+  }
+}
