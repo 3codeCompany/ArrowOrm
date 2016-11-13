@@ -200,6 +200,7 @@ class DB
 
     public function loadBaseModel($class)
     {
+
         $file = $this->generatedClassPath . str_replace(array("Arrow\\ORM\\", "\\"), array("", "_"), $class) . ".php";
 
         if (!file_exists($file)) {

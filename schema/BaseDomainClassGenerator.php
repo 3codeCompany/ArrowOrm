@@ -35,9 +35,9 @@ class BaseDomainClassGenerator
     {
         foreach ($schema->getTables() as $table) {
             $namespace = str_replace("\\", "_", $table->getNamespace());
-            file_put_contents($this->targetDir . "ORM" . ($namespace ? "_" . $namespace : "") . "_" . $table->getClass() . ".php", $this->generateClass($table));
-        }
 
+            file_put_contents($this->targetDir . "ORM" . ($namespace ? "_" . $namespace : "") . "_" . $table->getClassName() . ".php", $this->generateClass($table));
+        }
     }
 
     /**
@@ -50,7 +50,7 @@ class BaseDomainClassGenerator
     private function generateClass(Table $table)
     {
         $namespace = str_replace("\\", "_", $table->getNamespace());
-        $className = "ORM" . ($namespace ? "_" . $namespace : "") . "_{$table->getClass()}";
+        $className = "ORM" . ($namespace ? "_" . $namespace : "") . "_{$table->getClassName()}";
 
         $str = "";
         $this->pl("<?php namespace Arrow\ORM;", $str);
@@ -81,9 +81,9 @@ EOT;
 /**
  * Class {$className}_Criteria
  * @package Arrow\ORM
- * @method \\{$table->getNamespace()}\\{$table->getClass()}[] find()
- * @method \\{$table->getNamespace()}\\{$table->getClass()} findByKey()
- * @method \\{$table->getNamespace()}\\{$table->getClass()} findFirst()
+ * @method \\{$table->getNamespace()}\\{$table->getClassName()}[] find()
+ * @method \\{$table->getNamespace()}\\{$table->getClassName()} findByKey()
+ * @method \\{$table->getNamespace()}\\{$table->getClassName()} findFirst()
  */
 class {$className}_Criteria extends Criteria {
     $criteriaMethods
@@ -129,7 +129,7 @@ EOT;
                 $reference = $fKey->getReferences();
                 $fNamespace = $fKey->foreignTable->getNamespace();
                 $fNamespace = $fNamespace ? $fNamespace . "\\" : "";
-                $tmp[] = "'" . $fNamespace . $fKey->foreignTable->getClass() . "'=> array( '" . $reference[0]->getLocalFieldName() . "' => '" . $reference[0]->getForeignFieldName() . "' )";
+                $tmp[] = "'" . $fNamespace . $fKey->foreignTable->getClassName() . "'=> array( '" . $reference[0]->getLocalFieldName() . "' => '" . $reference[0]->getForeignFieldName() . "' )";
             }
             $this->pl("protected static \$foreignKeys = array( " . implode(", ", $tmp) . " );", $str, 1);
         } else {
@@ -149,7 +149,7 @@ EOT;
             $this->pl("protected static \$extensions = array(  );", $str, 1);
         }
         $this->pl("protected static \$table = \"{$table->getTableName()}\";", $str, 1);
-        $this->pl("protected static \$class = '" . ($namespace ? $table->getNamespace() . "\\" : "") . "{$table->getClass()}';", $str, 1);
+        $this->pl("protected static \$class = '" . ($namespace ? $table->getNamespace() . "\\" : "") . "{$table->getClassName()}';", $str, 1);
 
 
         $this->pl("protected  \$pKey = null;", $str, 1);

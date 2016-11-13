@@ -106,6 +106,12 @@ class Table implements ISchemaElement
         $this->class = $class;
     }
 
+    public function getClassName()
+    {
+        $tmp = explode("\\",$this->class);
+        return end($tmp);
+    }
+
     public function getClass()
     {
         return $this->class;
@@ -268,6 +274,10 @@ class Table implements ISchemaElement
      */
     public function getNamespace()
     {
+        if(strpos($this->class, "\\") !== false){
+            return str_replace("\\".$this->getClassName(), "", $this->class);
+        }
+
         return $this->namespace;
     }
 
