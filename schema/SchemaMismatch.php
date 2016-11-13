@@ -1,4 +1,5 @@
-<?php namespace Arrow\ORM;
+<?php
+namespace Arrow\ORM\Schema;
 /**
  * Mismatch information
  * Representation of mismatched element that exists in  schema and not exists in datasource

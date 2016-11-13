@@ -1,4 +1,5 @@
-<?php namespace Arrow\ORM;
+<?php
+namespace Arrow\ORM\Schema;
 /**
  * Writes schema config file
  *

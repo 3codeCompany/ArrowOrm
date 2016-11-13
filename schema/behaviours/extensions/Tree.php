@@ -1,5 +1,5 @@
 <?php
-namespace Arrow\ORM;
+namespace Arrow\ORM\Schema\Behaviours\Extensions;
 /**
  * Created by JetBrains PhpStorm.
  * User: artur

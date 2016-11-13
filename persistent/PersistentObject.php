@@ -1,5 +1,5 @@
 <?php
-namespace Arrow\ORM;
+namespace Arrow\ORM\Persistent;
 use Arrow\ORM\Extensions\TreeNode;
 
 /**

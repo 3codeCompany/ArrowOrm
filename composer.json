@@ -8,8 +8,8 @@
     }
   ],
   "autoload": {
-    "classmap": [
-      "/"
-    ]
+    "psr-4": {
+      "Arrow\\ORM\\": "/"
+    }
   }
 }

@@ -1,5 +1,6 @@
 <?php
-namespace Arrow\ORM;
+namespace Arrow\ORM\Persistent;
+
 /**
  * Created by JetBrains PhpStorm.
  * User: artur

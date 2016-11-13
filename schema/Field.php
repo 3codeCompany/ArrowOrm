@@ -1,4 +1,5 @@
-<?php namespace Arrow\ORM;
+<?php
+namespace Arrow\ORM\Schema;
 /**
  * @author     Artur Kmera <artur.kmera@3code.pl>
  * @version    0.9

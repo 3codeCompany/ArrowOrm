@@ -1,5 +1,5 @@
 <?php
-namespace Arrow\ORM;
+namespace Arrow\ORM\DB;
     /**
      * @author     Pawel Giemza
      * @version    1.0

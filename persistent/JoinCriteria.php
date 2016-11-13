@@ -1,4 +1,4 @@
-<?php namespace Arrow\ORM;
+<?php namespace Arrow\ORM\Persistent;
 
 
 class JoinCriteria extends Criteria implements \ArrayAccess, \IteratorAggregate
