@@ -9,7 +9,7 @@
   ],
   "autoload": {
     "classmap": [
-      "schema/","persistent/","interfaces/", "extensions/","db/","debug/"
+      "/"
     ]
   }
 }
