@@ -1,4 +1,4 @@
-<?php namespace Arrow\ORM;
+<?php namespace Arrow\ORM\Schema;
 /**
  * Foreign key schema representation
  *

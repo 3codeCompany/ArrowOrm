@@ -1,5 +1,8 @@
 <?php
-namespace Arrow\ORM\Schema\Behaviours;
+namespace Arrow\ORM\Extensions;
+use Arrow\ORM\Persistent\Criteria;
+use Arrow\ORM\Persistent\PersistentObject;
+
 /**
  * Created by JetBrains PhpStorm.
  * User: artur

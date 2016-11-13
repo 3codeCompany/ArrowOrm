@@ -1,5 +1,7 @@
 <?php
 namespace Arrow\ORM\Schema\Synchronizers;
+use Arrow\ORM\Schema\AbstractSynchronizer;
+
 /**
  * Mysql AbstractSynchronizer implementation
  *

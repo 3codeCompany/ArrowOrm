@@ -9,7 +9,7 @@
 namespace Arrow\ORM\Extensions;
 
 
-use Arrow\ORM\Criteria;
+use Arrow\ORM\Persistent\Criteria;
 use Arrow\ORM\PersistentFactory;
 
 trait TreeNode {

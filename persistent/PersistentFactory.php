@@ -1,6 +1,8 @@
 <?php
 namespace Arrow\ORM\Persistent;
 
+use Arrow\ORM\DB\DB;
+
 /**
  * Created by JetBrains PhpStorm.
  * User: artur

@@ -1,6 +1,5 @@
 <?php
 namespace Arrow\ORM\DB;
-use Arrow\ORM\Interfaces\ISQLGenerator;
     /**
      * @author     Pawel Giemza
      * @version    1.0
@@ -12,6 +11,8 @@ use Arrow\ORM\Interfaces\ISQLGenerator;
      *
      * @date 2009-03-06
      */
+use Arrow\ORM\Persistent\Criteria;
+use Arrow\ORM\Persistent\JoinCriteria;
 
 /**
  * Generates MySQL satement using ORM objects

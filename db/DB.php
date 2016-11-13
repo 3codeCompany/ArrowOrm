@@ -11,7 +11,12 @@
      *
      * @date 2009-06-01
      */
+use Arrow\ORM\Persistent\Criteria;
+use Arrow\ORM\Persistent\DataSet;
+use Arrow\ORM\Schema\BaseDomainClassGenerator;
+use Arrow\ORM\Schema\Schema;
 use Arrow\ORM\Schema\SchemaReader;
+use Arrow\ORM\Schema\Synchronizers\MysqlSynchronizer;
 
 /**
  * Interfaces OrmPersistent with specific DB handling classes
@@ -235,7 +240,7 @@ class DB
 
     private function generateBaseModels(Schema $schema)
     {
-        $generator = new \Arrow\ORM\BaseDomainClassGenerator();
+        $generator = new BaseDomainClassGenerator();
         $generator->targetDir = $this->generatedClassPath;
         $generator->generate($schema);
     }

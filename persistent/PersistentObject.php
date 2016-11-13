@@ -1,5 +1,6 @@
 <?php
 namespace Arrow\ORM\Persistent;
+use Arrow\ORM\Extensions\BaseTracker;
 use Arrow\ORM\Extensions\TreeNode;
 
 /**

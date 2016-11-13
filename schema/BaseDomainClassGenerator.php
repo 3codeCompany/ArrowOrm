@@ -79,7 +79,7 @@ EOT;
 
         $criteria = <<< EOT
 use Arrow\ORM\Persistent\Criteria;
-
+use Arrow\ORM\Persistent\PersistentObject;
 /**
  * Class {$className}_Criteria
  * @package Arrow\ORM
