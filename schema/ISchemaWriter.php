@@ -1,5 +1,5 @@
 <?php
-namespace Arrow\ORM\Interfaces;
+namespace Arrow\ORM\Schema;
 /**
  * SchemaWriter interface
  *

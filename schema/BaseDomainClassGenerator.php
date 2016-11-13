@@ -78,6 +78,7 @@ EOT;
         }
 
         $criteria = <<< EOT
+use Arrow\ORM\Persistent\Criteria;
 
 /**
  * Class {$className}_Criteria

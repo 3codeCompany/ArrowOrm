@@ -1,5 +1,7 @@
 <?php
 namespace Arrow\ORM\Schema;
+use Arrow\ORM\Interfaces\ISchemaReader;
+
 /**
  * Read schema config file
  *

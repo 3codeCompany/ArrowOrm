@@ -11,6 +11,7 @@
      *
      * @date 2009-06-01
      */
+use Arrow\ORM\Schema\SchemaReader;
 
 /**
  * Interfaces OrmPersistent with specific DB handling classes
@@ -215,7 +216,7 @@ class DB
 
     public function synchronize()
     {
-        $reader = new \Arrow\ORM\SchemaReader();
+        $reader = new SchemaReader();
         $schema = $reader->readSchemaFromFile($this->getSchemaFiles());
 
         $this->generateBaseModels($schema);

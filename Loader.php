@@ -1,5 +1,7 @@
 <?php
 namespace Arrow\ORM;
+use Arrow\ORM\DB\DB;
+
 /**
  * Created by JetBrains PhpStorm.
  * User: artur
