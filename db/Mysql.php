@@ -1,6 +1,5 @@
 <?php
 namespace Arrow\ORM\DB;
-use Arrow\ORM\Interfaces\ISQLGenerator;
     /**
      * @author     Pawel Giemza
      * @version    1.0

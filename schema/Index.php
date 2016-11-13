@@ -1,4 +1,5 @@
-<?php namespace Arrow\ORM;
+<?php namespace Arrow\ORM\Schema;
+
 /**
  * Index schema representation
  *

@@ -1,6 +1,9 @@
 <?php
 namespace Arrow\ORM\Persistent;
 
+use Arrow\ORM\Schema\Behaviours\ITracker;
+
+
 /**
  * Created by JetBrains PhpStorm.
  * User: artur

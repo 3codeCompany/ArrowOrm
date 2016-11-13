@@ -1,6 +1,6 @@
 <?php
 namespace Arrow\ORM\Schema;
-use Arrow\ORM\Interfaces\ISchemaElement;
+use Arrow\ORM\Exception;
 
 /**
  * Table schema class
@@ -287,8 +287,8 @@ class Table implements ISchemaElement
     public function addExtension($extension)
     {
         $interfaces = class_implements($extension);
-        if (!in_array('Arrow\ORM\IExtension', $interfaces)) {
-            throw new Exception("Extension class '{$extension}' in table '{$this->getTableName()}' do not implements '\\Arrow\\ORM\\IExtension'");
+        if (!in_array('Arrow\ORM\Schema\Behaviours\IExtension', $interfaces)) {
+            throw new Exception("Extension class '{$extension}' in table '{$this->getTableName()}' do not implements '\\Arrow\\ORM\\Schema\\Behaviours\\IExtension'");
         }
 
         $this->extensions[] = $extension;
@@ -302,8 +302,8 @@ class Table implements ISchemaElement
     public function addTracker($tracker)
     {
         $interfaces = class_implements($tracker);
-        if (!in_array('Arrow\ORM\ITracker', $interfaces)) {
-            throw new Exception("Tracker class '{$tracker}' in table '{$this->getTableName()}' do not implements '\\Arrow\\ORM\\ITracker'");
+        if (!in_array('Arrow\ORM\Schema\Behaviours\ITracker', $interfaces)) {
+            throw new Exception("Tracker class '{$tracker}' in table '{$this->getTableName()}' do not implements '\\Arrow\\ORM\\Schema\\Behaviours\\ITracker'");
         }
 
         $this->trackers[] = $tracker;
