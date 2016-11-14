@@ -212,7 +212,7 @@ class DB
 
         if (!file_exists($file)) {
             $this->synchronize();
-            $reader = new \Arrow\ORM\SchemaReader();
+            $reader = new SchemaReader();
             $schema = $reader->readSchemaFromFile($this->getSchemaFiles());
             $this->generateBaseModels($schema);
         }

@@ -2,8 +2,12 @@
 namespace Arrow\ORM\Schema\Synchronizers;
 use Arrow\ORM\Schema\AbstractMismatch;
 use Arrow\ORM\Schema\AbstractSynchronizer;
+use Arrow\ORM\Schema\DatasourceMismatch;
+use Arrow\ORM\Schema\Field;
+use Arrow\ORM\Schema\ResolvedMismatch;
 use Arrow\ORM\Schema\Schema;
 use Arrow\ORM\Schema\SchemaMismatch;
+use Arrow\ORM\Schema\Table;
 
 /**
  * Mysql AbstractSynchronizer implementation
