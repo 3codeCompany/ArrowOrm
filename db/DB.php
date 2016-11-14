@@ -13,6 +13,7 @@
      */
 use Arrow\ORM\Persistent\Criteria;
 use Arrow\ORM\Persistent\DataSet;
+use Arrow\ORM\Persistent\PersistentObject;
 use Arrow\ORM\Schema\BaseDomainClassGenerator;
 use Arrow\ORM\Schema\Schema;
 use Arrow\ORM\Schema\SchemaReader;

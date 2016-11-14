@@ -1,6 +1,9 @@
 <?php
 namespace Arrow\ORM\Schema\Synchronizers;
+use Arrow\ORM\Schema\AbstractMismatch;
 use Arrow\ORM\Schema\AbstractSynchronizer;
+use Arrow\ORM\Schema\Schema;
+use Arrow\ORM\Schema\SchemaMismatch;
 
 /**
  * Mysql AbstractSynchronizer implementation
