@@ -122,12 +122,14 @@ trait TreeNode {
      * @param bool $fields
      * @return TreeNode[]
      */
-    public function getChildren($fields = false)
+    public function getChildren()
     {
-        return Criteria::query(self::getClass())
+        $criteria = Criteria::query(self::getClass())
             ->order(self::$EXTENSION_TREE_SORT)
-            ->c(self::$EXTENSION_TREE_PARENT_ID, $this->data['id'])
-            ->find();
+            ->c(self::$EXTENSION_TREE_PARENT_ID, $this->data['id']);
+
+
+        return $criteria->find();
     }
 
     public function getAllChildren($idOnly = false)

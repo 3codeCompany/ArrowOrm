@@ -1,16 +1,16 @@
 <?php namespace Arrow\ORM\DB;
 
-    /**
-     * @author     Pawel Giemza
-     * @version    1.1
-     * @package    Arrow
-     * @subpackage Orm
-     * @link       http://arrowplatform.org/
-     * @copyright  2009 3code
-     * @license    GNU LGPL
-     *
-     * @date 2009-06-01
-     */
+/**
+ * @author     Pawel Giemza
+ * @version    1.1
+ * @package    Arrow
+ * @subpackage Orm
+ * @link       http://arrowplatform.org/
+ * @copyright  2009 3code
+ * @license    GNU LGPL
+ *
+ * @date 2009-06-01
+ */
 use Arrow\ORM\Persistent\Criteria;
 use Arrow\ORM\Persistent\DataSet;
 use Arrow\ORM\Persistent\PersistentObject;
@@ -73,6 +73,22 @@ class DB
      * @var bool
      */
     public $synchronizationEnabled = false;
+
+
+    /**
+     * Track for schema change
+     *
+     * @var bool
+     */
+    public $trackSchemaChange = false;
+
+
+    /**
+     * Youngest schema file modify time
+     *
+     * @var null
+     */
+    private $lastSchemaChange = null;
 
 
     /**
@@ -146,7 +162,7 @@ class DB
 
         try {
             $res = $this->query($query);
-            return new DataSet($class::getClass(), $res, $criteria, $asSimpleData );
+            return new DataSet($class::getClass(), $res, $criteria, $asSimpleData);
         } catch (\Exception $e) {
             print $e->getMessage() . PHP_EOL . $query;
             exit();
@@ -210,11 +226,12 @@ class DB
 
         $file = $this->generatedClassPath . str_replace(array("Arrow\\ORM\\", "\\"), array("", "_"), $class) . ".php";
 
-        if (!file_exists($file)) {
+        if (!file_exists($file)  ) {
             $this->synchronize();
-            $reader = new SchemaReader();
-            $schema = $reader->readSchemaFromFile($this->getSchemaFiles());
-            $this->generateBaseModels($schema);
+        }
+
+        if( $this->trackSchemaChange && $this->lastSchemaChange && $this->lastSchemaChange > filemtime($file) ){
+            $this->synchronize();
         }
 
         require $file;
@@ -227,9 +244,9 @@ class DB
 
         $this->generateBaseModels($schema);
 
-        if($this->synchronizationEnabled){
+        if ($this->synchronizationEnabled) {
             //todo synchronizacja z innymi bazami
-            $synchronizer = new MysqlSynchronizer( $this->DB );
+            $synchronizer = new MysqlSynchronizer($this->DB);
             $synchronizer->setForeignKeysIgnore(true);
             $mismaches = $synchronizer->getSchemaMismatches($schema, $this->DB);
             foreach ($mismaches as $m) {
@@ -251,8 +268,15 @@ class DB
         return $this->schemaFiles;
     }
 
+
     public function addSchemaFile($file)
     {
+        if ($this->trackSchemaChange) {
+            $mktime = filemtime($file);
+            if (!$this->lastSchemaChange || $mktime > $this->lastSchemaChange)
+                $this->lastSchemaChange = $mktime;
+        }
+
         $this->schemaFiles[] = $file;
     }
 
@@ -266,21 +290,24 @@ class DB
         throw new Exception("No schema file `{$file}` added to `{$this->name}` database ", 0);
     }
 
-    public function getLastQuery(){
+    public function getLastQuery()
+    {
         return $this->lastQuery;
     }
 
-    public function query($query){
+    public function query($query)
+    {
         $this->lastQuery = $query;
-        if($this->log){
+        if ($this->log) {
             $start = microtime(true);
             $time = microtime(true) - $start;
-            \FB::log($query,round($time * 1000, 3));
+            \FB::log($query, round($time * 1000, 3));
         }
         return $this->DB->query($query);
     }
 
-    private function execute($query){
+    private function execute($query)
+    {
         $this->lastQuery = $query;
         $this->DB->exec($query);
         return $this->DB->lastInsertId();
