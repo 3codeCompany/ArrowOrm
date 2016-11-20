@@ -40,15 +40,17 @@ abstract class AbstractSynchronizer
      */
     const MODE_ALL = 1;
 
-    private $inoreForeignKeys = false;
+    private $ignoreForeignKeys = false;
+
+
 
 
     /**
      * Resolve single mismatch
      *
-     * @param \PDO       $ds
+     * @param \PDO $ds
      * @param AbstractMismatch $mismatch
-     * @param int              $mode
+     * @param int $mode
      *
      * @return ResolvedMismatch
      */
@@ -63,7 +65,7 @@ abstract class AbstractSynchronizer
      *      print $mismatch->toString()."\n";
      * }
      *
-     * @param Schema     $schema
+     * @param Schema $schema
      * @param \PDO $ds
      *
      * @return AbstractMismatch []
@@ -73,22 +75,38 @@ abstract class AbstractSynchronizer
     /**
      * Synchronize datasource with schema using mode flag
      *
-     * @param Schema     $schema
+     * @param Schema $schema
      * @param \PDO $ds
-     * @param int        $mode
+     * @param int $mode
      *
      * @return ResolvedMismatch []
      */
-    abstract public function synchronize(Schema $schema,  $mode = self::MODE_SCHEMA_TO_DS);
+    abstract public function synchronize(Schema $schema, $mode = self::MODE_SCHEMA_TO_DS);
 
     public function setForeignKeysIgnore($set)
     {
-        $this->inoreForeignKeys = $set;
+        $this->ignoreForeignKeys = $set;
     }
 
     public function getForeignKeysIgnore()
     {
-        return $this->inoreForeignKeys;
+        return $this->ignoreForeignKeys;
+    }
+
+    /**
+     * @return boolean
+     */
+    public function isPreventRemoveActions()
+    {
+        return $this->preventRemoveActions;
+    }
+
+    /**
+     * @param boolean $preventRemoveActions
+     */
+    public function setPreventRemoveActions($preventRemoveActions)
+    {
+        $this->preventRemoveActions = $preventRemoveActions;
     }
 
 }

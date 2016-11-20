@@ -1,5 +1,7 @@
 <?php
 namespace Arrow\ORM\Schema\Synchronizers;
+
+use Arrow\ORM\Exception;
 use Arrow\ORM\Schema\AbstractMismatch;
 use Arrow\ORM\Schema\AbstractSynchronizer;
 use Arrow\ORM\Schema\DatasourceMismatch;
@@ -33,22 +35,24 @@ class MysqlSynchronizer extends AbstractSynchronizer
      * @param $query
      * @return \PDOStatement
      */
-    private function query($query){
+    private function query($query)
+    {
         $statement = $this->connection->prepare($query);
         try {
             $statement->execute();
-        }catch (\PDOException $ex){
-            exit("Problem executing query: <pre>".$query."</pre><pre>{$ex->getMessage()}</pre>");
+        } catch (\PDOException $ex) {
+            exit("Problem executing query: <pre>" . $query . "</pre><pre>{$ex->getMessage()}</pre>");
         }
         return $statement;
     }
 
-    private function update($query){
+    private function update($query)
+    {
         $statement = $this->connection->prepare($query);
         try {
             $statement->execute();
-        }catch (\PDOException $ex){
-            exit("Problem executing query: <pre>".$query."</pre><pre>{$ex->getMessage()}</pre>");
+        } catch (\PDOException $ex) {
+            exit("Problem executing query: <pre>" . $query . "</pre><pre>{$ex->getMessage()}</pre>");
         }
 
     }
@@ -65,7 +69,7 @@ class MysqlSynchronizer extends AbstractSynchronizer
      * @see AbstractSynchronizer::getSchemaMismatches()
      * @return SchemaMismatch[]
      */
-    public function getSchemaMismatches(Schema $schema )
+    public function getSchemaMismatches(Schema $schema)
     {
         $mismatches = array();
 
@@ -116,7 +120,7 @@ class MysqlSynchronizer extends AbstractSynchronizer
      *
      * @see AbstractSynchronizer::synchronize()
      */
-    public function synchronize(Schema $schema,  $mode = AbstractSynchronizer::MODE_SCHEMA_TO_DS)
+    public function synchronize(Schema $schema, $mode = AbstractSynchronizer::MODE_SCHEMA_TO_DS)
     {
 
         $mismatches = $this->getSchemaMismatches($schema);
@@ -162,8 +166,13 @@ class MysqlSynchronizer extends AbstractSynchronizer
                         //creating field on datasource
                         $sql = $this->createField($mismatch->parentElement, $mismatch->element);
                     } elseif ($mode == self::MODE_DS_TO_SCHEMA) {
-                        //removing field from schema ( table)
-                        $mismatch->parentElement->deleteField($mismatch->element);
+                        if (!$this->isPreventRemoveActions()) {
+                            //removing field from schema ( table)
+                            $mismatch->parentElement->deleteField($mismatch->element);
+                        } else {
+                            $toRemove = "Field: {$mismatch->parentElement}.{$mismatch->element}";
+                            throw new Exception("Remove prevention is on, cant remove $toRemove");
+                        }
                     }
                 }
                 if ($mismatch->type == SchemaMismatch::NOT_EQUALS || $mismatch->type == SchemaMismatch::INDEX_NOT_EQUALS) {
@@ -177,7 +186,7 @@ class MysqlSynchronizer extends AbstractSynchronizer
                     if ($mode == self::MODE_SCHEMA_TO_DS || $mode == self::MODE_ALL) {
                         $sql = $this->updateField($mismatch->parentElement, $mismatch->element, true);
                     } elseif ($mode == self::MODE_DS_TO_SCHEMA) {
-                        $mismatch->element->setName( $mismatch->element->getOldName());
+                        $mismatch->element->setName($mismatch->element->getOldName());
                     }
                 }
             }
@@ -188,7 +197,12 @@ class MysqlSynchronizer extends AbstractSynchronizer
 
             if ($mismatch->elementType == DatasourceMismatch::ELEMENT_TYPE_TABLE) {
                 if ($mode == self::MODE_SCHEMA_TO_DS) {
-                    $sql = $this->deleteTable($mismatch->element);
+                    if (!$this->isPreventRemoveActions()) {
+                        $sql = $this->deleteTable($mismatch->element);
+                    } else {
+                        $toRemove = "Table: {$mismatch->element->getName()}";
+                        throw new Exception("Remove prevention is on, cant remove $toRemove");
+                    }
                 } elseif ($mode == self::MODE_DS_TO_SCHEMA || $mode == self::MODE_ALL) {
                     $table = $this->createTableFromDs($mismatch->element);
                     $schema->addTable($table);
@@ -196,7 +210,13 @@ class MysqlSynchronizer extends AbstractSynchronizer
             }
             if ($mismatch->elementType == DatasourceMismatch::ELEMENT_TYPE_FIELD) {
                 if ($mode == self::MODE_SCHEMA_TO_DS) {
-                    $sql = $this->deleteField($mismatch->parentElement, $mismatch->element);
+                    if (!$this->isPreventRemoveActions()) {
+                        //removing field from schema ( table)
+                        $sql = $this->deleteField($mismatch->parentElement, $mismatch->element);
+                    } else {
+                        $toRemove = "Field: {$mismatch->parentElement}.{$mismatch->element}";
+                        throw new Exception("Remove prevention is on, cant remove $toRemove");
+                    }
                 } elseif ($mode == self::MODE_DS_TO_SCHEMA || $mode == self::MODE_ALL) {
                     $field = $this->createFieldFromDs($mismatch->parentElement, $mismatch->element);
                     $table = $schema->getTableByTable($mismatch->parentElement);
@@ -353,7 +373,7 @@ class MysqlSynchronizer extends AbstractSynchronizer
 
                 if ($exists) {
                     //TODO sprawdzic poprawnosc
-                    $mismatches[] = new SchemaMismatch($schema,  $table, $tableFields[$i], SchemaMismatch::NOT_EQUALS);
+                    $mismatches[] = new SchemaMismatch($schema, $table, $tableFields[$i], SchemaMismatch::NOT_EQUALS);
                 } else {
                     //checks that field exists in schema
                     $exists = false;
@@ -453,8 +473,8 @@ class MysqlSynchronizer extends AbstractSynchronizer
             $testType = "longtext";
         */
         //todo sprawdzic czemu oba pola zmieniamy na integer - powinno tylko jedno
-        if($type=="int") $type = "integer";
-        if($testType=="int") $testType = "integer";
+        if ($type == "int") $type = "integer";
+        if ($testType == "int") $testType = "integer";
 
         if ($testType == "text" && !in_array($type, array("text", "mediumtext", "longtext"))) {
 
@@ -600,12 +620,12 @@ class MysqlSynchronizer extends AbstractSynchronizer
         $sql = "ALTER TABLE  `{$table->getTableName()}` CHANGE `{$name}`  $sql  {$prev}";
 
         //cannot twice set primary index in the same field
-        if(strpos( $sql, "PRIMARY KEY " ) !== false){
+        if (strpos($sql, "PRIMARY KEY ") !== false) {
             $q = "SHOW KEYS FROM `{$table->getTableName()}` WHERE Key_name = 'PRIMARY'";
             $res = $this->query($q)->fetchAll(\PDO::FETCH_ASSOC);
-            foreach($res as $row){
-                if($row["Column_name"] == $field->getName())
-                    $sql = str_replace("PRIMARY KEY ", "",$sql);
+            foreach ($res as $row) {
+                if ($row["Column_name"] == $field->getName())
+                    $sql = str_replace("PRIMARY KEY ", "", $sql);
             }
         }
         $this->update($sql);
@@ -766,14 +786,13 @@ class MysqlSynchronizer extends AbstractSynchronizer
                 preg_match_all("/ON UPDATE (.+?)$/", $line, $matches3);
 
 
-
                 $info[] = array(
-                    "name"            => $matches[1][0],
-                    "local_field"     => $matches[1][1],
+                    "name" => $matches[1][0],
+                    "local_field" => $matches[1][1],
                     "reference_table" => $matches[1][2],
                     "reference_field" => $matches[1][3],
-                    "on_delete"       => isset($matches2[1][0])?$matches2[1][0]:'',
-                    "on_update"       => isset($matches3[1][0])?$matches3[1][0]:'',
+                    "on_delete" => isset($matches2[1][0]) ? $matches2[1][0] : '',
+                    "on_update" => isset($matches3[1][0]) ? $matches3[1][0] : '',
                 );
             }
         }

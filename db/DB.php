@@ -74,6 +74,13 @@ class DB
      */
     public $synchronizationEnabled = false;
 
+    /**
+     * Prevent synchronizer to delete db structures
+     *
+     * @var bool
+     */
+    private $preventRemoveActions = true;
+
 
     /**
      * Track for schema change
@@ -247,6 +254,7 @@ class DB
         if ($this->synchronizationEnabled) {
             //todo synchronizacja z innymi bazami
             $synchronizer = new MysqlSynchronizer($this->DB);
+            $synchronizer->setPreventRemoveActions($this->isPreventRemoveActions());
             $synchronizer->setForeignKeysIgnore(true);
             $mismaches = $synchronizer->getSchemaMismatches($schema, $this->DB);
             foreach ($mismaches as $m) {
@@ -273,8 +281,9 @@ class DB
     {
         if ($this->trackSchemaChange) {
             $mktime = filemtime($file);
-            if (!$this->lastSchemaChange || $mktime > $this->lastSchemaChange)
+            if (!$this->lastSchemaChange || $mktime > $this->lastSchemaChange) {
                 $this->lastSchemaChange = $mktime;
+            }
         }
 
         $this->schemaFiles[] = $file;
@@ -312,6 +321,26 @@ class DB
         $this->DB->exec($query);
         return $this->DB->lastInsertId();
     }
+
+    /**
+     * @return boolean
+     */
+    public function isPreventRemoveActions()
+    {
+        return $this->preventRemoveActions;
+    }
+
+    /**
+     * @param boolean $preventRemoveActions
+     * @return DB
+     */
+    public function setPreventRemoveActions($preventRemoveActions)
+    {
+        $this->preventRemoveActions = $preventRemoveActions;
+        return $this;
+    }
+
+
 
 
 }
