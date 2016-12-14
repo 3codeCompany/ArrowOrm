@@ -200,7 +200,7 @@ class MysqlSynchronizer extends AbstractSynchronizer
                     if (!$this->isPreventRemoveActions()) {
                         $sql = $this->deleteTable($mismatch->element);
                     } else {
-                        $toRemove = "Table: {$mismatch->element->getName()}";
+                        $toRemove = "Table: {$mismatch->element}";
                         print("Remove prevention is on, cant remove $toRemove\n");
                     }
                 } elseif ($mode == self::MODE_DS_TO_SCHEMA || $mode == self::MODE_ALL) {
