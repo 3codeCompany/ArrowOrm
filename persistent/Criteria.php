@@ -12,6 +12,8 @@
      *
      * @date 2009-03-06
      */
+use Arrow\ORM\DB\DB;
+use Arrow\ORM\Exception;
 
 /**
  * Delivers API for selecting rows.
@@ -212,7 +214,7 @@ class Criteria
     {
         //todo ładniej obudować
         if( $this->isAggregated()  || !empty($this->data['group'])){
-            return \Arrow\ORM\DB::getDB()->query("SELECT FOUND_ROWS()")->fetchColumn();
+            return DB::getDB()->query("SELECT FOUND_ROWS()")->fetchColumn();
         }
 
         return $this->getOneValue("id", "count");
