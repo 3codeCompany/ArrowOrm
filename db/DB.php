@@ -167,13 +167,9 @@ class DB
         $type::setConnection($this->DB);
         $query = $type::select($class::getTable(), $criteria);
 
-        try {
-            $res = $this->query($query);
-            return new DataSet($class::getClass(), $res, $criteria, $asSimpleData);
-        } catch (\Exception $e) {
-            print $e->getMessage() . PHP_EOL . $query;
-            exit();
-        }
+        $res = $this->query($query);
+        return new DataSet($class::getClass(), $res, $criteria, $asSimpleData);
+
     }
 
 

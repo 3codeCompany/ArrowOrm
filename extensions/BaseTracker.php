@@ -1,7 +1,6 @@
 <?php
 namespace Arrow\ORM\Extensions;
 
-use Arrow\ORM\Extensions\ITracker;
 use Arrow\ORM\Persistent\Criteria;
 use Arrow\ORM\Persistent\DataSet;
 use Arrow\ORM\Persistent\PersistentObject;
