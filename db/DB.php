@@ -18,6 +18,7 @@ use Arrow\ORM\Schema\BaseDomainClassGenerator;
 use Arrow\ORM\Schema\Schema;
 use Arrow\ORM\Schema\SchemaReader;
 use Arrow\ORM\Schema\Synchronizers\MysqlSynchronizer;
+use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
 
@@ -25,7 +26,7 @@ use Psr\Log\LogLevel;
  * Interfaces OrmPersistent with specific DB handling classes
  *
  */
-class DB
+class DB implements LoggerAwareInterface
 {
     /**
      * List of database connections
@@ -382,7 +383,7 @@ class DB
     /**
      * @param LoggerInterface $logger
      */
-    public function setLogger($logger)
+    public function setLogger(LoggerInterface $logger)
     {
         $this->logger = $logger;
     }
