@@ -18,6 +18,8 @@ use Arrow\ORM\Schema\BaseDomainClassGenerator;
 use Arrow\ORM\Schema\Schema;
 use Arrow\ORM\Schema\SchemaReader;
 use Arrow\ORM\Schema\Synchronizers\MysqlSynchronizer;
+use Psr\Log\LoggerInterface;
+use Psr\Log\LogLevel;
 
 /**
  * Interfaces OrmPersistent with specific DB handling classes
@@ -33,7 +35,7 @@ class DB
     private static $databases = array();
     private static $defaultDb = null;
 
-    private $log = false;
+
 
     /**
      * @var \PDO
@@ -97,6 +99,21 @@ class DB
      */
     private $lastSchemaChange = null;
 
+    /**
+     * @var LoggerInterface
+     */
+    private $logger = null;
+
+
+
+    private $logLevel = null;
+
+    public function log($level, $message, array $context = []){
+        if($this->logger) {
+            $this->logger->log($level, $message, $context);
+        }
+    }
+
 
     /**
      * @param      $type
@@ -122,6 +139,7 @@ class DB
 
         return self::$databases[$name];
     }
+
 
     /**
      * Return database connection object to database specified in parameter. If not specified default (i.e. first defined in XML file) database will be accessed
@@ -230,11 +248,11 @@ class DB
 
         $file = $this->generatedClassPath . str_replace(array("Arrow\\ORM\\", "\\"), array("", "_"), $class) . ".php";
 
-        if (!file_exists($file)  ) {
+        if (!file_exists($file)) {
             $this->synchronize();
         }
 
-        if( $this->trackSchemaChange && $this->lastSchemaChange && $this->lastSchemaChange > filemtime($file) ){
+        if ($this->trackSchemaChange && $this->lastSchemaChange && $this->lastSchemaChange > filemtime($file)) {
             $this->synchronize();
         }
 
@@ -304,18 +322,34 @@ class DB
     public function query($query)
     {
         $this->lastQuery = $query;
-        if ($this->log) {
+        if ($this->logLevel == LogLevel::DEBUG )
             $start = microtime(true);
+
+        $result =  $this->DB->query($query);
+
+        if($this->logLevel == LogLevel::DEBUG){
             $time = microtime(true) - $start;
-            \FB::log($query, round($time * 1000, 3));
+            $this->log(LogLevel::DEBUG, "[ $time s]".$query, debug_backtrace());
         }
-        return $this->DB->query($query);
+
+        return $result;
     }
 
     private function execute($query)
     {
         $this->lastQuery = $query;
+
+        if ($this->logLevel == LogLevel::DEBUG )
+            $start = microtime(true);
+
         $this->DB->exec($query);
+
+        if($this->logLevel == LogLevel::DEBUG){
+            $time = microtime(true) - $start;
+            $this->log(LogLevel::DEBUG, "[ $time s]".$query, debug_backtrace());
+        }
+
+
         return $this->DB->lastInsertId();
     }
 
@@ -335,6 +369,38 @@ class DB
     {
         $this->preventRemoveActions = $preventRemoveActions;
         return $this;
+    }
+
+    /**
+     * @return LoggerInterface
+     */
+    public function getLogger()
+    {
+        return $this->logger;
+    }
+
+    /**
+     * @param LoggerInterface $logger
+     */
+    public function setLogger($logger)
+    {
+        $this->logger = $logger;
+    }
+
+    /**
+     * @return null
+     */
+    public function getLogLevel()
+    {
+        return $this->logLevel;
+    }
+
+    /**
+     * @param null $logLevel
+     */
+    public function setLogLevel($logLevel)
+    {
+        $this->logLevel = $logLevel;
     }
 
 
