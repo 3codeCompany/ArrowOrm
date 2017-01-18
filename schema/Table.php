@@ -278,7 +278,9 @@ class Table implements ISchemaElement
     public function getNamespace()
     {
         if(strpos($this->class, "\\") !== false){
-            return str_replace("\\".$this->getClassName(), "", $this->class);
+            $tmp = explode("\\", $this->class);
+            unset($tmp[count($tmp)-1]);
+            return implode("\\", $tmp);
         }
 
         return $this->namespace;
@@ -289,9 +291,9 @@ class Table implements ISchemaElement
 
         $interfaces = class_implements($extension);
 
+
         if (!in_array('Arrow\ORM\Extensions\IExtension', $interfaces)) {
             throw new Exception("Extension class '{$extension}' in table '{$this->getTableName()}' do not implements 'Arrow\\ORM\\Extensions\\IExtension'");
-
         }
 
         $this->extensions[] = $extension;
@@ -304,6 +306,7 @@ class Table implements ISchemaElement
 
     public function addTracker($tracker)
     {
+
         $interfaces = class_implements($tracker);
 
         if (!in_array('Arrow\ORM\Extensions\ITracker', $interfaces)) {
