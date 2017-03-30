@@ -1,16 +1,18 @@
 <?php
+
 namespace Arrow\ORM\DB;
-    /**
-     * @author     Pawel Giemza
-     * @version    1.0
-     * @package    Arrow
-     * @subpackage Orm
-     * @link       http://arrowplatform.org/
-     * @copyright  2009 3code
-     * @license    GNU LGPL
-     *
-     * @date 2009-03-06
-     */
+
+/**
+ * @author     Pawel Giemza
+ * @version    1.0
+ * @package    Arrow
+ * @subpackage Orm
+ * @link       http://arrowplatform.org/
+ * @copyright  2009 3code
+ * @license    GNU LGPL
+ *
+ * @date 2009-03-06
+ */
 use Arrow\ORM\Persistent\Criteria;
 use Arrow\ORM\Persistent\JoinCriteria;
 
@@ -55,26 +57,27 @@ class Mysql implements ISQLGenerator
         $joins = "";
         if (isset($data["joins"])) {
             $joins = "";
-            $parseColumn = function($column, $table){
+            $parseColumn = function ($column, $table) {
                 if (strpos($column, ":") == false) {
-                    if($column[0] == "'")
-                        return "'".@mysql_escape_string(trim( $column,"'"))."'";
+                    if ($column[0] == "'") {
+                        return self::$connection->quote( trim($column, "'"));
+                    }
                     return "`{$table}`.`{$column}`";
                 } else {
                     $tmp = explode(":", $column);
-                    return "`".$tmp[0] . "`" . ".`" . $tmp[1]."`";
+                    return "`" . $tmp[0] . "`" . ".`" . $tmp[1] . "`";
                 }
             };
             foreach ($data["joins"] as $j) {
 
                 $tmp = [];
-                foreach($j["on"] as $field => $foreignField){
-                    $tmp[] = $parseColumn($field, $table) . " = " . $parseColumn($foreignField,$j["as"]);
+                foreach ($j["on"] as $field => $foreignField) {
+                    $tmp[] = $parseColumn($field, $table) . " = " . $parseColumn($foreignField, $j["as"]);
                 }
-                $on = implode( " and ", $tmp );
+                $on = implode(" and ", $tmp);
 
 
-                $joins .= "\n " . ($j["type"]==JoinCriteria::J_OUTER?'':$j["type"])." JOIN `" . $j["class"]::getTable() . "` as `" . $j["as"] . "` ON ( ".$on." ".$j["customCondition"]." )";
+                $joins .= "\n " . ($j["type"] == JoinCriteria::J_OUTER ? '' : $j["type"]) . " JOIN `" . $j["class"]::getTable() . "` as `" . $j["as"] . "` ON ( " . $on . " " . $j["customCondition"] . " )";
             }
 
         }
@@ -83,12 +86,12 @@ class Mysql implements ISQLGenerator
                 $joins .= "\n" . $j["queryFragment"];
             }
         }
-/*        if($table == "shop_allegro_auctions") {
-            $q = "SELECT " . ($criteria->isAggregated() ? 'SQL_CALC_FOUND_ROWS ' : '') . self::columnsToSQL($criteria) . " FROM $table $joins\n WHERE " . self::conditionsToSQL($criteria) . self::groupsToSQL($table, $criteria);
-            \ADebug::log($q);
-        }*/
+        /*        if($table == "shop_allegro_auctions") {
+                    $q = "SELECT " . ($criteria->isAggregated() ? 'SQL_CALC_FOUND_ROWS ' : '') . self::columnsToSQL($criteria) . " FROM $table $joins\n WHERE " . self::conditionsToSQL($criteria) . self::groupsToSQL($table, $criteria);
+                    \ADebug::log($q);
+                }*/
 
-        return "SELECT ". ($criteria->isAggregated()?'SQL_CALC_FOUND_ROWS ':'') . self::columnsToSQL($criteria) . " FROM $table $joins\n WHERE " . self::conditionsToSQL($criteria) . self::groupsToSQL($table, $criteria);
+        return "SELECT " . ($criteria->isAggregated() ? 'SQL_CALC_FOUND_ROWS ' : '') . self::columnsToSQL($criteria) . " FROM $table $joins\n WHERE " . self::conditionsToSQL($criteria) . self::groupsToSQL($table, $criteria);
 
     }
 
@@ -119,7 +122,7 @@ class Mysql implements ISQLGenerator
                     $query .= "NULL";
                 } else {
 
-                    $query .= (is_int($str) || is_float($str)) ? $str : "'" . @mysql_escape_string($str) . "'";
+                    $query .= (is_int($str) || is_float($str)) ? $str :  self::$connection->quote($str);
                 }
 
                 $first = false;
@@ -145,14 +148,14 @@ class Mysql implements ISQLGenerator
 
         $query = "UPDATE $table SET ";
         $first = true;
- 
+
         foreach ($data as $column => $value) {
             $query .= (($first) ? '' : ', ') . "`$column`" . '=';
 
             if (is_null($value)) {
                 $query .= "NULL";
             } else {
-                $query .= (is_int($value) || is_float($value)) ? $value : "'" . @mysql_escape_string($value) . "'";
+                $query .= (is_int($value) || is_float($value)) ? $value :  self::$connection->quote($value);
             }
 
             $first = false;
@@ -160,8 +163,8 @@ class Mysql implements ISQLGenerator
 
         $query .= " WHERE " . self::conditionsToSQL($criteria);
 
-        if(isset($_REQUEST["arrTest"])){
-            print $query."<br />";
+        if (isset($_REQUEST["arrTest"])) {
+            print $query . "<br />";
         }
 
         return $query;
@@ -250,12 +253,12 @@ class Mysql implements ISQLGenerator
         if (isset($criteriaData['conditions'])) {
             foreach ($criteriaData['conditions'] as $cond) {
 
-                $conditionString.="\n\t";
+                $conditionString .= "\n\t";
 
                 /*if(empty($cond["column"]))
                     continue;*/
 
-                if (is_string($cond)  ) {
+                if (is_string($cond)) {
                     $conditionString .= " $cond ";
                     continue;
                 }
@@ -263,9 +266,9 @@ class Mysql implements ISQLGenerator
                 $condition = $cond['condition'];
 
 
-                if(  $cond['column'] && $cond['column'][0] == "'"  ){
-                    $column = trim($cond['column'],"'") ;
-                }else {
+                if ($cond['column'] && $cond['column'][0] == "'") {
+                    $column = trim($cond['column'], "'");
+                } else {
 
                     $column = "`" . $cond['column'] . "`";
 
@@ -306,7 +309,6 @@ class Mysql implements ISQLGenerator
                         }
                     }
                 }
-
 
 
                 switch ($condition) {
@@ -452,7 +454,7 @@ class Mysql implements ISQLGenerator
 
 
             //lets say custom joins dont need extra code
-            $joined = isset($criteriaData["joins"])||isset($criteriaData["customJoins"]);
+            $joined = isset($criteriaData["joins"]) || isset($criteriaData["customJoins"]);
 
             if (!isset($criteriaData['columns'])) {
                 continue;
@@ -463,11 +465,11 @@ class Mysql implements ISQLGenerator
                 //\FB::log($col['column'],$col['column'][0]);
                 if ($col['column'][0] == "(" || $col['custom'] == true) {
                     $tmp = $col['column'];
-                } elseif ( $col['column'][0] == "'" ) {
-                    $tmp = trim($col['column'],"'");
-                } elseif ( $joined && strpos($col['column'], ":") !== false ) {
+                } elseif ($col['column'][0] == "'") {
+                    $tmp = trim($col['column'], "'");
+                } elseif ($joined && strpos($col['column'], ":") !== false) {
                     $_tmp = explode(":", $col['column']);
-                    $tmp = "`".$_tmp[0] . "`" . ".`" . $_tmp[1]. "`" ;
+                    $tmp = "`" . $_tmp[0] . "`" . ".`" . $_tmp[1] . "`";
                 } else {
                     $tmp = "{$tableName}.{$col['column']}";
                 }
@@ -479,7 +481,7 @@ class Mysql implements ISQLGenerator
                 //$tmp = '';
                 if (!empty($col['aggregate'])) {
                     $agdistinct = "";
-                    $tmp = $col['aggregate'] . "($agdistinct " .$tmp. ")";
+                    $tmp = $col['aggregate'] . "($agdistinct " . $tmp . ")";
                 }
 
                 if ($first) {
@@ -498,7 +500,7 @@ class Mysql implements ISQLGenerator
                 }
             }
 
-            if(isset($criteriaData["customJoins"])){
+            if (isset($criteriaData["customJoins"])) {
                 foreach ($criteriaData["customJoins"] as $j) {
                     foreach ($j["fields"] as $field) {
                         $columns .= ",\n\t`" . $j["as"] . '`.`' . $field . '` as `' . $j["as"] . ':' . $field . '`';
@@ -548,14 +550,14 @@ class Mysql implements ISQLGenerator
                 }
                 $tmp = array();
                 foreach ($criteriaData['group'] as $group) {
-                    if($group[0] == "'"){
-                        $tmp[]  = "'".trim( $group,"'")."'";
-                    }else{
+                    if ($group[0] == "'") {
+                        $tmp[] = "'" . trim($group, "'") . "'";
+                    } else {
                         if (strpos($group, ":") == false) {
                             $tmp[] = "{$tableName}.{$group}";
                         } else {
                             $_tmp = explode(":", $group);
-                            $tmp[] = "`".$_tmp[0] . "`" . ".`" . $_tmp[1]. "`" ;
+                            $tmp[] = "`" . $_tmp[0] . "`" . ".`" . $_tmp[1] . "`";
                         }
                     }
                 }
@@ -573,28 +575,29 @@ class Mysql implements ISQLGenerator
                     if ($order[0] == "RAND()" || $order[0] == "RAND") {
                         $tmp = "RAND()";
                     } else {
-                        if($order[0][0] == "'"){
-                            $tmp = trim( $order[0],"'");
-                        }else{
+                        if ($order[0][0] == "'") {
+                            $tmp = trim($order[0], "'");
+                        } else {
 
                             if (strpos($order[0], ":") == false) {
                                 $alias = false;
                                 //sprawdzanie czy nie sortujemy wg aliasu
-                                foreach($criteriaData['columns'] as $col ) {
+                                foreach ($criteriaData['columns'] as $col) {
                                     if ($col["alias"] == $order[0]) {
                                         $tmp = "`{$order[0]}`";
                                         $alias = true;
                                     }
                                 }
-                                if(!$alias)
-                                    $tmp= "{$tableName}.{$order[0]}";
+                                if (!$alias) {
+                                    $tmp = "{$tableName}.{$order[0]}";
+                                }
                             } else {
                                 $_tmp = explode(":", $order[0]);
-                                $tmp = "`".$_tmp[0] . "`" . ".`" . $_tmp[1]. "`" ;
+                                $tmp = "`" . $_tmp[0] . "`" . ".`" . $_tmp[1] . "`";
                             }
                         }
 
-                        $tmp.= " ".$order[1];
+                        $tmp .= " " . $order[1];
 
                     }
 
