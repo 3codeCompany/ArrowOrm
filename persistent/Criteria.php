@@ -614,6 +614,13 @@ class Criteria
         return $this;
     }
 
+    public function stringify(){
+
+        //return print_r($this->data, 1);
+        return json_encode($this->data);
+        //return "criteria string";
+    }
+
 }
 
 ?>
