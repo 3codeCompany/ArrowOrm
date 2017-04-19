@@ -8,8 +8,8 @@
 
 namespace Arrow\ORM\Debug;
 
-use Arrow\ORM\DataSet;
-use Arrow\ORM\PersistentObject;
+use Arrow\ORM\Persistent\DataSet;
+use Arrow\ORM\Persistent\PersistentObject;
 
 class ResultPrinter {
 

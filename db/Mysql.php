@@ -119,7 +119,7 @@ class Mysql implements ISQLGenerator
                     $query .= "NULL";
                 } else {
 
-                    $query .= (is_int($str) || is_float($str)) ? $str : "'" . @mysql_escape_string($str) . "'";
+                    $query .= (is_int($str) || is_float($str)) ? $str : "'" . addslashes($str) . "'";
                 }
 
                 $first = false;
