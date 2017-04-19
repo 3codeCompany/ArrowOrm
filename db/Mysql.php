@@ -60,7 +60,7 @@ class Mysql implements ISQLGenerator
             $parseColumn = function ($column, $table) {
                 if (strpos($column, ":") == false) {
                     if ($column[0] == "'") {
-                        return self::$connection->quote( trim($column, "'"));
+                        return self::$connection->quote(trim($column, "'"));
                     }
                     return "`{$table}`.`{$column}`";
                 } else {
@@ -122,7 +122,7 @@ class Mysql implements ISQLGenerator
                     $query .= "NULL";
                 } else {
 
-                    $query .= (is_int($str) || is_float($str)) ? $str :  self::$connection->quote($str);
+                    $query .= (is_int($str) || is_float($str)) ? $str : self::$connection->quote($str);
 
                 }
 
@@ -156,7 +156,7 @@ class Mysql implements ISQLGenerator
             if (is_null($value)) {
                 $query .= "NULL";
             } else {
-                $query .= (is_int($value) || is_float($value)) ? $value :  self::$connection->quote($value);
+                $query .= (is_int($value) || is_float($value)) ? $value : self::$connection->quote($value);
             }
 
             $first = false;

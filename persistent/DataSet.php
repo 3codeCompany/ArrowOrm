@@ -7,7 +7,7 @@ namespace Arrow\ORM\Persistent;
  * Time: 10:38
  * To change this template use File | Settings | File Templates.
  */
-class DataSet implements \Iterator, \ArrayAccess, \Countable, \Serializable
+class DataSet implements \Iterator, \ArrayAccess, \Countable, \Serializable, \JsonSerializable
 {
 
     const AS_OBJECT = 0;
@@ -371,5 +371,18 @@ class DataSet implements \Iterator, \ArrayAccess, \Countable, \Serializable
         foreach($this as $el)
             $el->delete();
     }
+
+    /**
+     * Specify data which should be serialized to JSON
+     * @link http://php.net/manual/en/jsonserializable.jsonserialize.php
+     * @return mixed data which can be serialized by <b>json_encode</b>,
+     * which is a value of any type other than a resource.
+     * @since 5.4.0
+     */
+    function jsonSerialize()
+    {
+        return $this->toArray();
+    }
+
 
 }
