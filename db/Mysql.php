@@ -13,8 +13,11 @@ namespace Arrow\ORM\DB;
  *
  * @date 2009-03-06
  */
+use ADebug;
 use Arrow\ORM\Persistent\Criteria;
 use Arrow\ORM\Persistent\JoinCriteria;
+use function substr;
+use function var_dump;
 
 /**
  * Generates MySQL satement using ORM objects
@@ -59,7 +62,9 @@ class Mysql implements ISQLGenerator
             $joins = "";
             $parseColumn = function ($column, $table) {
                 if (strpos($column, ":") == false) {
-                    if ($column[0] == "'") {
+                    if(strpos( $column, "raw:" ) === 0) {
+                        return self::$connection->quote(tsubstr($column, 4));
+                    }else if ($column[0] == "'") {
                         return self::$connection->quote(trim($column, "'"));
                     }
                     return "`{$table}`.`{$column}`";
@@ -269,6 +274,8 @@ class Mysql implements ISQLGenerator
 
                 if ($cond['column'] && $cond['column'][0] == "'") {
                     $column = trim($cond['column'], "'");
+                } elseif(strpos( $cond['column'], "raw:" ) === 0) {
+                    $column = substr($cond['column'], 4);
                 } else {
 
                     $column = "`" . $cond['column'] . "`";
@@ -453,7 +460,6 @@ class Mysql implements ISQLGenerator
             $tableName = $class::getTable();
             $prefix = "";
 
-
             //lets say custom joins dont need extra code
             $joined = isset($criteriaData["joins"]) || isset($criteriaData["customJoins"]);
 
@@ -461,10 +467,11 @@ class Mysql implements ISQLGenerator
                 continue;
             }
 
-
             foreach ($criteriaData['columns'] as $col) {
-                //\FB::log($col['column'],$col['column'][0]);
-                if ($col['column'][0] == "(" || $col['custom'] == true) {
+
+                if(strpos( $col['column'], "raw:" ) === 0) {
+                    $tmp = substr($col['column'], 4);
+                }elseif ($col['column'][0] == "(" || $col['custom'] == true) {
                     $tmp = $col['column'];
                 } elseif ($col['column'][0] == "'") {
                     $tmp = trim($col['column'], "'");
@@ -551,7 +558,9 @@ class Mysql implements ISQLGenerator
                 }
                 $tmp = array();
                 foreach ($criteriaData['group'] as $group) {
-                    if ($group[0] == "'") {
+                    if(strpos( $group, "raw:" ) === 0) {
+                        $tmp[] = substr($group,4);
+                    }elseif ($group[0] == "'") {
                         $tmp[] = "'" . trim($group, "'") . "'";
                     } else {
                         if (strpos($group, ":") == false) {
