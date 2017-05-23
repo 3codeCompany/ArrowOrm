@@ -1,4 +1,5 @@
 <?php
+
 namespace Arrow\ORM\Schema;
 
 /**
@@ -24,7 +25,7 @@ class SchemaReader implements ISchemaReader
     {
         if (!is_array($file)) {
             $files = [$file];
-        }else{
+        } else {
             $files = $file;
         }
 
@@ -40,12 +41,12 @@ class SchemaReader implements ISchemaReader
          * first we have to read whole schema and search for includes
          * its important to  properly read all relations
          */
-        $includeSchema = function($file) use(&$includeSchema,&$files){
+        $includeSchema = function ($file) use (&$includeSchema, &$files) {
             $sxml = simplexml_load_file($file);
             //<include path="./db-schemas/crm-schema.xml" />
             $includes = $sxml->xpath('/schema/include');
-            foreach($includes as $include){
-                $fileToInclude = dirname($file)."/".$include["path"];
+            foreach ($includes as $include) {
+                $fileToInclude = dirname($file) . "/" . $include["path"];
                 $files[] = $fileToInclude;
                 $includeSchema($fileToInclude);
             }
@@ -71,8 +72,9 @@ class SchemaReader implements ISchemaReader
                     continue;
                 }
                 $table = $this->readTable($schema, $tableNode, $namespace);
-                if(!$tableNode["extension-to"])
+                if (!$tableNode["extension-to"]) {
                     $schema->addTable($table);
+                }
             }
         }
         /**
@@ -88,7 +90,7 @@ class SchemaReader implements ISchemaReader
                     continue;
                 }
                 $name = (string)$node['name'];
-                if(empty($name)){
+                if (empty($name)) {
                     $name = (string)$node['extension-to'];
                 }
                 $table = $schema->getTableByTable($name);
@@ -96,7 +98,7 @@ class SchemaReader implements ISchemaReader
                     switch ($tag) {
                         case 'field':
                             //dodaje pola tylko jeśli to rosszeżenie
-                            if($node["extension-to"]) {
+                            if ($node["extension-to"]) {
                                 $field = $this->readField($table, $_node);
                                 $table->addField($field);
                             }
@@ -107,12 +109,16 @@ class SchemaReader implements ISchemaReader
                             break;
                         case 'trackers':
                             break;
+                        case 'connection':
+                            $connection = $this->readConnection($schema, $table, $_node);
+                            $table->addConnection($connection);
+                            break;
                         case 'foreign-key':
                             $foreignKey = $this->readForeignKey($schema, $table, $_node);
                             $table->addForeignKey($foreignKey);
                             break;
                         default:
-                            throw new SchemaException("Unknow schema element '$tag'");
+                            throw new SchemaException("Unknown schema element '$tag'");
                     }
                 }
             }
@@ -166,18 +172,21 @@ class SchemaReader implements ISchemaReader
      */
     public function readTable(Schema $schema, $node, $namespace)
     {
+        $class =  (string) $node['class'];
+
+
         $table = new Table();
-        $table->setClass($node['class']);
+        $table->setClass($class);
         $table->setNamespace($namespace);
         $table->setBaseClass((string)$node['baseclass']);
         $table->setTableName((String)$node['name']);
-     /*   if (isset($node['extension-to'])) {
-            $table->setAsExtensionTo($node['extension-to']);
-            /           if($table->getTableName() == ""){
-                //todo zmienić rand na jakiś index
-                $table->setTableName($node['extension-to'];
-            }
-        }*/
+        /*   if (isset($node['extension-to'])) {
+               $table->setAsExtensionTo($node['extension-to']);
+               /           if($table->getTableName() == ""){
+                   //todo zmienić rand na jakiś index
+                   $table->setTableName($node['extension-to'];
+               }
+           }*/
 
         foreach ($node->children() as $tag => $node) {
             switch ($tag) {
@@ -189,6 +198,9 @@ class SchemaReader implements ISchemaReader
                     $field = $this->readIndex($table, $node);
                     $table->addIndex($field);
                     break;
+                case 'connection':
+                    //do nothing we read connection  later
+                    break;
                 case 'foreign-key':
                     break;
                     //do nothing we read f keys later
@@ -199,6 +211,7 @@ class SchemaReader implements ISchemaReader
                         $table->addTracker($tracker);
                     }
                     break;
+
                 case 'extensions':
                     foreach ($node->extension as $el) {
                         $extension = $this->readExtension($table, $el);
@@ -238,10 +251,10 @@ class SchemaReader implements ISchemaReader
 
     /**
      * Reads foreign key information and create ForeignKey object
-     * $param Schema
+     * $param $schema Schema
      *
-     * @param Table
-     * @param XmlElement
+     * @param $table Table
+     * @param $node XmlElement
      *
      * @return ForeignKey
      * @todo Implement
@@ -260,6 +273,31 @@ class SchemaReader implements ISchemaReader
         $fKey->addReference($fKeyReferece);
 
         return $fKey;
+    }
+
+
+    /**
+     * Reads foreign key information and create ForeignKey object
+     * $param $schema Schema
+     *
+     * @param $table Table
+     * @param $node XmlElement
+     *
+     * @return ForeignKey
+     * @todo Implement
+     */
+    public function readConnection(Schema $schema, Table $table, $node)
+    {
+        $connection = new Connection();
+        $connection->name = (string)$node["name"];
+        foreach ($node->table as $tableIn) {
+            $table = $schema->getTableByTable((string)$tableIn["name"]);
+            $ct = new ConnectionTable($table, (string)$tableIn["local"], (string)$tableIn["foreign"]);
+
+            $connection->tables[] = $ct;
+        }
+
+        return $connection;
     }
 
     /**

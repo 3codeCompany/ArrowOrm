@@ -15,6 +15,7 @@ use Arrow\ORM\Persistent\Criteria;
 use Arrow\ORM\Persistent\DataSet;
 use Arrow\ORM\Persistent\PersistentObject;
 use Arrow\ORM\Schema\BaseDomainClassGenerator;
+use Arrow\ORM\Schema\ISchemaTransformer;
 use Arrow\ORM\Schema\Schema;
 use Arrow\ORM\Schema\SchemaReader;
 use Arrow\ORM\Schema\Synchronizers\MysqlSynchronizer;
@@ -36,6 +37,10 @@ class DB implements LoggerAwareInterface
     private static $databases = array();
     private static $defaultDb = null;
 
+    /**
+     * @var ISchemaTransformer[]
+     */
+    protected $transformers = [];
 
 
     /**
@@ -106,11 +111,11 @@ class DB implements LoggerAwareInterface
     private $logger = null;
 
 
-
     private $logLevel = null;
 
-    public function log($level, $message, array $context = []){
-        if($this->logger) {
+    public function log($level, $message, array $context = [])
+    {
+        if ($this->logger) {
             $this->logger->log($level, $message, $context);
         }
     }
@@ -168,6 +173,16 @@ class DB implements LoggerAwareInterface
         $this->name = $name;
         $this->DB = $pdoReference;
         $this->generatedClassPath = $generatedClassPath;
+    }
+
+    /**
+     * @param $transformer ISchemaTransformer
+     * @return $this
+     */
+    public function addTransformer(ISchemaTransformer $transformer)
+    {
+        $this->transformers[] = $transformer;
+        return $this;
     }
 
 
@@ -266,6 +281,9 @@ class DB implements LoggerAwareInterface
         $schema = $reader->readSchemaFromFile($this->getSchemaFiles());
 
         $this->generateBaseModels($schema);
+        foreach ($this->transformers as $generator) {
+            $generator->transform($schema);
+        }
 
         if ($this->synchronizationEnabled) {
             //todo synchronizacja z innymi bazami
@@ -323,14 +341,15 @@ class DB implements LoggerAwareInterface
     public function query($query)
     {
         $this->lastQuery = $query;
-        if ($this->logLevel == LogLevel::DEBUG )
+        if ($this->logLevel == LogLevel::DEBUG) {
             $start = microtime(true);
+        }
 
-        $result =  $this->DB->query($query);
+        $result = $this->DB->query($query);
 
-        if($this->logLevel == LogLevel::DEBUG){
+        if ($this->logLevel == LogLevel::DEBUG) {
             $time = microtime(true) - $start;
-            $this->log(LogLevel::DEBUG, "[ $time s]".$query, debug_backtrace());
+            $this->log(LogLevel::DEBUG, "[ $time s]" . $query, debug_backtrace());
         }
 
         return $result;
@@ -340,14 +359,15 @@ class DB implements LoggerAwareInterface
     {
         $this->lastQuery = $query;
 
-        if ($this->logLevel == LogLevel::DEBUG )
+        if ($this->logLevel == LogLevel::DEBUG) {
             $start = microtime(true);
+        }
 
         $this->DB->exec($query);
 
-        if($this->logLevel == LogLevel::DEBUG){
+        if ($this->logLevel == LogLevel::DEBUG) {
             $time = microtime(true) - $start;
-            $this->log(LogLevel::DEBUG, "[ $time s]".$query, debug_backtrace());
+            $this->log(LogLevel::DEBUG, "[ $time s]" . $query, debug_backtrace());
         }
 
 
@@ -403,8 +423,6 @@ class DB implements LoggerAwareInterface
     {
         $this->logLevel = $logLevel;
     }
-
-
 
 
 }

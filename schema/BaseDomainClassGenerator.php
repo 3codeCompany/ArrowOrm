@@ -1,5 +1,7 @@
 <?php
+
 namespace Arrow\ORM\Schema;
+
 /**
  * Generator used to create domain objects base classes
  *
@@ -11,7 +13,7 @@ namespace Arrow\ORM\Schema;
  * @copyright  2011 Arrowplatform
  * @license    GNU LGPL
  */
-class BaseDomainClassGenerator
+class BaseDomainClassGenerator implements ISchemaTransformer
 {
     /**
      * Line separator (ending) constant
@@ -25,6 +27,11 @@ class BaseDomainClassGenerator
      * @var string
      */
     public $targetDir = "../cache/";
+
+    public function transform(Schema $schema)
+    {
+        $this->generate($schema);
+    }
 
 
     /**
@@ -59,9 +66,10 @@ class BaseDomainClassGenerator
         $criteriaMethods = "";
         $methods = [];
         foreach ($table->getFields() as $field) {
-            $tmp =  lcfirst(str_replace(" ","", ucwords(str_replace("_", " ",$field->getName()))));
-            if(isset($methods[$tmp]))
+            $tmp = lcfirst(str_replace(" ", "", ucwords(str_replace("_", " ", $field->getName()))));
+            if (isset($methods[$tmp])) {
                 continue;
+            }
             $methods[$tmp] = 1;
 
             $criteriaMethod = <<< EOT
@@ -71,9 +79,9 @@ class BaseDomainClassGenerator
                  */
 EOT;
 
-            $this->pl($criteriaMethod,$criteriaMethods);
-            $this->pl("public function _" . $tmp . "( \$value, \$condition = self::C_EQUAL ){",$criteriaMethods,1);
-            $this->pl("return \$this->c('" . $field->getName() . "', \$value, \$condition);",$criteriaMethods,2);
+            $this->pl($criteriaMethod, $criteriaMethods);
+            $this->pl("public function _" . $tmp . "( \$value, \$condition = self::C_EQUAL ){", $criteriaMethods, 1);
+            $this->pl("return \$this->c('" . $field->getName() . "', \$value, \$condition);", $criteriaMethods, 2);
             $this->pl("}", $criteriaMethods, 1);
         }
 
@@ -93,7 +101,7 @@ class {$className}_Criteria extends Criteria {
 
 
 EOT;
-        $this->pl($criteria,$str);
+        $this->pl($criteria, $str);
 
         $this->pl("class $className extends PersistentObject /*{$table->getBaseClass()}*/{", $str);
 
@@ -158,9 +166,10 @@ EOT;
 
         $methods = [];
         foreach ($table->getFields() as $field) {
-            $tmp =  lcfirst(str_replace(" ","", ucwords(str_replace("_", " ",$field->getName()))));
-            if(isset($methods[$tmp]))
+            $tmp = lcfirst(str_replace(" ", "", ucwords(str_replace("_", " ", $field->getName()))));
+            if (isset($methods[$tmp])) {
                 continue;
+            }
             $methods[$tmp] = 1;
 
             $this->pl("public function _" . $tmp . "(){ return \$this->data['" . $field->getName() . "']; }", $str, 1);
@@ -180,14 +189,55 @@ EOT;
                 }
 EOT;
 
-        $this->pl($criteriaMethod,$str);
+        $this->pl($criteriaMethod, $str);
+
+
+        foreach ($table->getConnections() as $connection) {
+
+            foreach (["dataset", "criteria"] as $type) {
+
+                $fName = "_conn" . ucfirst($connection->name);
+                $fName = $type == "criteria" ? $fName . "Criteria" : $fName;
+
+
+                $this->pl("public function " . $fName . "(" . ($type == "criteria" ? "" : "\$columns = []") . "){ ", $str, 1);
+                if (count($connection->tables) == 1) {
+                    $this->pl("\$result = [ \$this->getValue('{$connection->tables[0]->getLocal()}') ];", $str);
+                }
+                $length = count($connection->tables);
+                foreach ($connection->tables as $index => $connTable) {
+
+                    $isLast = $index == $length - 1;
+                    if (!$isLast) {
+                        $nextColumn = $connection->tables[$index + 1]->getLocal();
+                        $x = "\$result = \\{$connTable->getTable()->getClass()}::get()->c('{$connTable->getForeign()}', \$this->getValue('{$connTable->getLocal()}'))->findAsFieldArray(  '{$nextColumn}' );";
+                        $this->pl($x, $str);
+                    } else {
+                        $x = "\$crit = \\{$connTable->getTable()->getClass()}::get()->c('{$connTable->getForeign()}', \$result, Criteria::C_IN);";
+                        $this->pl($x, $str);
+
+                        if ($type == "criteria") {
+                            $x = "\$result = \$crit;";
+                        } else {
+                            $this->pl("if(!empty(\$columns)){ \$crit->setColumns(\$columns); }", $str);
+                            $x = "\$result = \$crit->find();";
+                        }
+
+                        $this->pl($x, $str);
+                    }
+
+                }
+
+
+                $this->pl("return \$result;", $str);
+                $this->pl("}", $str);
+            }
+        }
+
 
         $this->pl("}", $str);
 
 
-
-
-        $this->pl("?>", $str);
         return $str;
     }
 
@@ -196,7 +246,7 @@ EOT;
      *
      * @param string $line
      * @param string $string reference to string to place new line
-     * @param int    $ident  number of tabulators before line
+     * @param int $ident number of tabulators before line
      */
     private function pl($line, &$string, $ident = 0)
     {

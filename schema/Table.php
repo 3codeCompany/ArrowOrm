@@ -62,6 +62,12 @@ class Table implements ISchemaElement
 
 
     /**
+     * @var Connection[]
+     */
+    private $connections = [];
+
+
+    /**
      * Indexes
      *
      * @var Index []
@@ -117,6 +123,8 @@ class Table implements ISchemaElement
 
     public function getClass()
     {
+
+
         return $this->class;
     }
 
@@ -321,6 +329,26 @@ class Table implements ISchemaElement
     {
         return $this->trackers;
     }
+
+    /**
+     * @return Connection[]
+     */
+    public function getConnections()
+    {
+        return $this->connections;
+    }
+
+    /**
+     * @param Connection[] $connections
+     * @return Table
+     */
+    public function addConnection($connection)
+    {
+        $this->connections[] = $connection;
+        return $this;
+    }
+
+
 }
 
 ?>
