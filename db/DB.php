@@ -11,6 +11,7 @@
  *
  * @date 2009-06-01
  */
+use Arrow\ORM\Exception;
 use Arrow\ORM\Persistent\Criteria;
 use Arrow\ORM\Persistent\DataSet;
 use Arrow\ORM\Persistent\PersistentObject;
@@ -270,6 +271,10 @@ class DB implements LoggerAwareInterface
 
         if ($this->trackSchemaChange && $this->lastSchemaChange && $this->lastSchemaChange > filemtime($file)) {
             $this->synchronize();
+        }
+
+        if (!file_exists($file)) {
+            throw new Exception("File `$file` didn't generated");
         }
 
         require $file;

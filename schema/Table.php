@@ -123,7 +123,8 @@ class Table implements ISchemaElement
 
     public function getClass()
     {
-
+        if($this->class[0] != "\\")
+            return "\\".$this->class;
 
         return $this->class;
     }
@@ -286,7 +287,7 @@ class Table implements ISchemaElement
     public function getNamespace()
     {
         if(strpos($this->class, "\\") !== false){
-            $tmp = explode("\\", $this->class);
+            $tmp = explode("\\", trim($this->getClass(), "\\"));
             unset($tmp[count($tmp)-1]);
             return implode("\\", $tmp);
         }

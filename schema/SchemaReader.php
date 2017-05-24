@@ -292,9 +292,15 @@ class SchemaReader implements ISchemaReader
         $connection->name = (string)$node["name"];
         foreach ($node->table as $tableIn) {
             $table = $schema->getTableByTable((string)$tableIn["name"]);
-            $ct = new ConnectionTable($table, (string)$tableIn["local"], (string)$tableIn["foreign"]);
+            $additionalConditions = [];
+            foreach($tableIn->condition as $condition){
+                $additionalConditions[] = ["field" => $condition["field"]."", "value" => $condition["value"].""];
+            }
+            $ct = new ConnectionTable($table, (string)$tableIn["local"], (string)$tableIn["foreign"], $additionalConditions);
 
             $connection->tables[] = $ct;
+
+
         }
 
         return $connection;

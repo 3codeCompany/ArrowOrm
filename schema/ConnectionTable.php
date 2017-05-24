@@ -16,15 +16,17 @@ class ConnectionTable implements ISchemaElement
      * @var Table
      */
     protected $table;
-    protected  $local;
-    protected  $foreign;
+    protected $local;
+    protected $foreign;
+    protected $additionalConditions = [];
 
 
-    function __construct(Table $table, $local, $foreign)
+    function __construct(Table $table, $local, $foreign, $additionalConditions)
     {
         $this->table = $table;
         $this->foreign = $foreign;
         $this->local = $local;
+        $this->additionalConditions = $additionalConditions;
     }
 
     /**
@@ -81,6 +83,23 @@ class ConnectionTable implements ISchemaElement
         return $this;
     }
 
+    /**
+     * @return array
+     */
+    public function getAdditionalConditions()
+    {
+        return $this->additionalConditions;
+    }
+
+    /**
+     * @param array $additionalConditions
+     * @return ConnectionTable
+     */
+    public function setAdditionalConditions($additionalConditions)
+    {
+        $this->additionalConditions = $additionalConditions;
+        return $this;
+    }
 
 
 

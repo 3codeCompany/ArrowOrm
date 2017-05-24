@@ -2,6 +2,8 @@
 
 namespace Arrow\ORM\Schema;
 
+use function str_replace;
+
 /**
  * Generator used to create domain objects base classes
  *
@@ -198,7 +200,20 @@ EOT;
 
                 $fName = "_conn" . ucfirst($connection->name);
                 $fName = $type == "criteria" ? $fName . "Criteria" : $fName;
+                $lastTable = $connection->tables[count($connection->tables)-1]->getTable();
+                $_namespace = str_replace("\\","_",$lastTable->getNamespace());
+                $_className = "ORM" . ($_namespace ? "_" . $_namespace : "") . "_{$lastTable->getClassName()}";
 
+                $_className = $type == "criteria" ? $_className . "_Criteria" : $_className."[]";
+                $x = "
+                /**
+                 * @return {$_className}
+                 */
+                 ";
+
+                print $x;
+
+                $this->pl($x, $str);
 
                 $this->pl("public function " . $fName . "(" . ($type == "criteria" ? "" : "\$columns = []") . "){ ", $str, 1);
                 if (count($connection->tables) == 1) {
@@ -210,11 +225,21 @@ EOT;
                     $isLast = $index == $length - 1;
                     if (!$isLast) {
                         $nextColumn = $connection->tables[$index + 1]->getLocal();
-                        $x = "\$result = \\{$connTable->getTable()->getClass()}::get()->c('{$connTable->getForeign()}', \$this->getValue('{$connTable->getLocal()}'))->findAsFieldArray(  '{$nextColumn}' );";
+                        $x = "\$crit = {$connTable->getTable()->getClass()}::get()->c('{$connTable->getForeign()}', \$this->getValue('{$connTable->getLocal()}'));";
                         $this->pl($x, $str);
+                        foreach($connTable->getAdditionalConditions() as $condition){
+                            $this->pl("\$crit->c('{$condition["field"]}', '{$condition["value"]}');", $str);
+                        }
+                        $x = "\$result = \$crit->findAsFieldArray(  '{$nextColumn}' );";
+                        $this->pl($x, $str);
+
                     } else {
-                        $x = "\$crit = \\{$connTable->getTable()->getClass()}::get()->c('{$connTable->getForeign()}', \$result, Criteria::C_IN);";
+                        $x = "\$crit = {$connTable->getTable()->getClass()}::get()->c('{$connTable->getForeign()}', \$result, Criteria::C_IN);";
                         $this->pl($x, $str);
+
+                        foreach($connTable->getAdditionalConditions() as $condition){
+                            $this->pl("\$crit->c('{$condition["field"]}', '{$condition["value"]}');", $str);
+                        }
 
                         if ($type == "criteria") {
                             $x = "\$result = \$crit;";
