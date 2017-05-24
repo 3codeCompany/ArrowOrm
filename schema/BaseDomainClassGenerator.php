@@ -211,7 +211,6 @@ EOT;
                  */
                  ";
 
-                print $x;
 
                 $this->pl($x, $str);
 
