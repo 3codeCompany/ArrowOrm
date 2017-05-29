@@ -198,7 +198,7 @@ EOT;
 
             foreach (["dataset", "criteria"] as $type) {
 
-                $fName = "_conn" . ucfirst($connection->name);
+                $fName = "_conn_" . ucfirst($connection->name);
                 $fName = $type == "criteria" ? $fName . "Criteria" : $fName;
                 $lastTable = $connection->tables[count($connection->tables)-1]->getTable();
                 $_namespace = str_replace("\\","_",$lastTable->getNamespace());
