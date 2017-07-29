@@ -64,7 +64,7 @@ class Mysql implements ISQLGenerator
 
                 if (strpos($column, ":") == false) {
                     if(strpos( $column, "raw:" ) === 0) {
-                        return self::$connection->quote(tsubstr($column, 4));
+                        return self::$connection->quote(substr($column, 4));
                     }else if ($column[0] == "'") {
                         return self::$connection->quote(trim($column, "'"));
                     }
@@ -72,7 +72,7 @@ class Mysql implements ISQLGenerator
                 } else {
                     $tmp = explode(":", $column);
                     if ($tmp[0] == "raw") {
-                        return self::$connection->quote(tsubstr($column, 4));
+                        return self::$connection->quote(substr($column, 4));
                     } else {
                         return "`" . $tmp[0] . "`" . ".`" . $tmp[1] . "`";
                     }
@@ -591,9 +591,12 @@ class Mysql implements ISQLGenerator
                     $tmp = '';
                     if ($order[0] == "RAND()" || $order[0] == "RAND") {
                         $tmp = "RAND()";
-                    } else {
+                    } else {cd
                         if ($order[0][0] == "'") {
                             $tmp = trim($order[0], "'");
+
+                        }elseif(strpos( $order[0], "raw:" ) === 0) {
+                            $tmp = self::$connection->quote(substr($order[0], 4));
                         } else {
 
                             if (strpos($order[0], ":") == false) {
