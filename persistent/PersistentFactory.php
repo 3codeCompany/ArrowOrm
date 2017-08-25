@@ -2,6 +2,7 @@
 namespace Arrow\ORM\Persistent;
 
 use Arrow\ORM\DB\DB;
+use Arrow\ORM\Exception;
 
 /**
  * Created by JetBrains PhpStorm.

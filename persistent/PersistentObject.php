@@ -1,5 +1,7 @@
 <?php
+
 namespace Arrow\ORM\Persistent;
+
 use Arrow\ORM\Exception;
 use Arrow\ORM\Extensions\BaseTracker;
 use Arrow\ORM\Extensions\TreeNode;
@@ -33,17 +35,19 @@ class PersistentObject extends BaseTracker implements \ArrayAccess, \JsonSeriali
      */
     public function __construct($data = null, $parameters = null)
     {
-        if($data !== null)
+        if ($data !== null) {
             $this->setValues($data);
-        if($parameters !== null)
+        }
+        if ($parameters !== null) {
             $this->setParameters($parameters);
+        }
     }
 
     /**
      * @param $data array
      * @return static
      */
-    public static function create( $data)
+    public static function create($data)
     {
         $class = static::$class;
         $obj = new $class($data);
@@ -55,15 +59,16 @@ class PersistentObject extends BaseTracker implements \ArrayAccess, \JsonSeriali
     /**
      * @return Criteria
      */
-    public static function get( ){
+    public static function get()
+    {
         return Criteria::query(static::getClass());
     }
 
     /**
-    * @param $data array
-    * @return static
-    */
-    public static function createIfNotExists(  $data)
+     * @param $data array
+     * @return static
+     */
+    public static function createIfNotExists($data)
     {
         $criteria = Criteria::query(static::$class);
         foreach ($data as $field => $value) {
@@ -79,17 +84,19 @@ class PersistentObject extends BaseTracker implements \ArrayAccess, \JsonSeriali
         return $obj;
     }
 
-    public static  function exists($data){
+    public static function exists($data)
+    {
         $criteria = Criteria::query(static::$class);
         foreach ($data as $field => $value) {
             $criteria->c($field, $value);
         }
 
         $obj = $criteria->findFirst();
-        return $obj?$obj:false;
+        return $obj ? $obj : false;
     }
 
-    public static  function findEqual($data){
+    public static function findEqual($data)
+    {
         $criteria = Criteria::query(static::$class);
         foreach ($data as $field => $value) {
             $criteria->c($field, $value);
@@ -120,13 +127,12 @@ class PersistentObject extends BaseTracker implements \ArrayAccess, \JsonSeriali
                 }
 
                 //todo for join changes
-                if (array_key_exists($field, $this->data))
+                if (array_key_exists($field, $this->data)) {
                     return $this->data[$field];
+                }
 
 
-
-
-                throw new Exception(array("msg" => "[PersistentObject] Field not exists " . static::$class . "['{$field}']", "class" => get_class($this), "field" => $field, 'fields' => static::getFields() ));
+                throw new Exception(array("msg" => "[PersistentObject] Field not exists " . static::$class . "['{$field}']", "class" => get_class($this), "field" => $field, 'fields' => static::getFields()));
             }
 
             if ($field == self::getPKField()) {
@@ -141,7 +147,8 @@ class PersistentObject extends BaseTracker implements \ArrayAccess, \JsonSeriali
         return $this->data[$field];
     }
 
-    public function getLoadedFields(){
+    public function getLoadedFields()
+    {
         return array_keys($this->data);
     }
 
@@ -249,10 +256,10 @@ class PersistentObject extends BaseTracker implements \ArrayAccess, \JsonSeriali
     public static function getConfiguration()
     {
         return array(
-            "table"      => static::$table,
-            "fields"     => static::$fields,
-            "class"      => static::$class,
-            "trackers"   => static::$trackers,
+            "table" => static::$table,
+            "fields" => static::$fields,
+            "class" => static::$class,
+            "trackers" => static::$trackers,
             "extensions" => static::$extensions
         );
     }
@@ -273,7 +280,7 @@ class PersistentObject extends BaseTracker implements \ArrayAccess, \JsonSeriali
 
     public function delete()
     {
-        if($this instanceof TreeNode) {
+        if ($this instanceof TreeNode) {
             $this->_delete();
         }
         PersistentFactory::delete($this);
@@ -301,8 +308,9 @@ class PersistentObject extends BaseTracker implements \ArrayAccess, \JsonSeriali
         }
 
         //join
-        if(isset($this->data[$offset]))
+        if (isset($this->data[$offset])) {
             return true;
+        }
 
         return false;
     }
@@ -333,7 +341,7 @@ class PersistentObject extends BaseTracker implements \ArrayAccess, \JsonSeriali
      * @param mixed $offset <p>
      *                      The offset to assign the value to.
      * </p>
-     * @param mixed $value  <p>
+     * @param mixed $value <p>
      *                      The value to set.
      * </p>
      *
@@ -380,7 +388,7 @@ class PersistentObject extends BaseTracker implements \ArrayAccess, \JsonSeriali
     {
         parent::afterObjectSave($object);
 
-        if($this instanceof TreeNode) {
+        if ($this instanceof TreeNode) {
             $this->updateTreeSorting();
         }
 
@@ -480,6 +488,11 @@ class PersistentObject extends BaseTracker implements \ArrayAccess, \JsonSeriali
      */
     function jsonSerialize()
     {
+        $parameters = $this->getParameters();
+        if ($parameters) {
+            return array_merge($this->data, ["__parameters" => $parameters]);
+        }
+
         return $this->data;
     }
 
