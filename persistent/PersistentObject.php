@@ -192,7 +192,10 @@ class PersistentObject extends BaseTracker implements \ArrayAccess, \JsonSeriali
     public function setValues($values, $tmp = false)
     {
         foreach ($values as $key => $value) {
-            $this->setValue($key, $value, $tmp);
+            //we dont save parameters
+            if($key !== "__parameters") {
+                $this->setValue($key, $value, $tmp);
+            }
         }
         return $this;
     }
