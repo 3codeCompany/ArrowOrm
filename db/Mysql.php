@@ -591,7 +591,7 @@ class Mysql implements ISQLGenerator
                     $tmp = '';
                     if ($order[0] == "RAND()" || $order[0] == "RAND") {
                         $tmp = "RAND()";
-                    } else {cd
+                    } else {
                         if ($order[0][0] == "'") {
                             $tmp = trim($order[0], "'");
 
