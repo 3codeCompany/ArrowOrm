@@ -174,7 +174,7 @@ EOT;
             }
             $methods[$tmp] = 1;
 
-            $this->pl("public function _" . $tmp . "(){ return \$this->data['" . $field->getName() . "']; }", $str, 1);
+            $this->pl("public function _" . $tmp . "( \$newVal = false ){ if(\$newVal !== false){   \$this->data['" . $field->getName() . "'] = \$newVal; }  return \$this->data['" . $field->getName() . "']; }", $str, 1);
         }
 
 

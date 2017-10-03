@@ -1,6 +1,9 @@
 <?php
+
 namespace Arrow\ORM\Schema;
+
 use Arrow\ORM\Exception;
+use JsonSerializable;
 
 /**
  * Table schema class
@@ -13,8 +16,7 @@ use Arrow\ORM\Exception;
  * @copyright  2011 Arrowplatform
  * @license    GNU LGPL
  */
-
-class Table implements ISchemaElement
+class Table implements ISchemaElement, JsonSerializable
 {
     /**
      * Class  ( slash separated )
@@ -117,14 +119,15 @@ class Table implements ISchemaElement
 
     public function getClassName()
     {
-        $tmp = explode("\\",$this->class);
+        $tmp = explode("\\", $this->class);
         return end($tmp);
     }
 
     public function getClass()
     {
-        if($this->class[0] != "\\")
-            return "\\".$this->class;
+        if ($this->class[0] != "\\") {
+            return "\\" . $this->class;
+        }
 
         return $this->class;
     }
@@ -221,7 +224,7 @@ class Table implements ISchemaElement
      *
      * @param String $name
      */
-    public function getFieldByName( $name )
+    public function getFieldByName($name)
     {
         foreach ($this->fields as $field) {
             if ($field->getName() == $name) {
@@ -263,11 +266,11 @@ class Table implements ISchemaElement
         }
 
         return array(
-            "class"       => $this->class,
-            "baseClass"   => $this->baseClass,
-            "table"       => $this->table,
-            "fields"      => $fields,
-            "indexes"     => $this->indexes,
+            "class" => $this->class,
+            "baseClass" => $this->baseClass,
+            "table" => $this->table,
+            "fields" => $fields,
+            "indexes" => $this->indexes,
             "foreignKeys" => $this->foreignKeys,
 
         );
@@ -286,9 +289,9 @@ class Table implements ISchemaElement
      */
     public function getNamespace()
     {
-        if(strpos($this->class, "\\") !== false){
+        if (strpos($this->class, "\\") !== false) {
             $tmp = explode("\\", trim($this->getClass(), "\\"));
-            unset($tmp[count($tmp)-1]);
+            unset($tmp[count($tmp) - 1]);
             return implode("\\", $tmp);
         }
 
@@ -350,6 +353,24 @@ class Table implements ISchemaElement
     }
 
 
+    /**
+     * Specify data which should be serialized to JSON
+     * @link http://php.net/manual/en/jsonserializable.jsonserialize.php
+     * @return mixed data which can be serialized by <b>json_encode</b>,
+     * which is a value of any type other than a resource.
+     * @since 5.4.0
+     */
+    public function jsonSerialize()
+    {
+        return [
+            "class" => $this->class,
+            "name" => $this->getTableName(),
+            "fields" => $this->fields,
+            "connections" => [],
+            "indexes" => [],
+            "fKeys" => []
+        ];
+    }
 }
 
 ?>

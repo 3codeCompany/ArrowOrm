@@ -1,5 +1,8 @@
 <?php
 namespace Arrow\ORM\Schema;
+
+use JsonSerializable;
+
 /**
  * Container for tables
  *
@@ -11,7 +14,7 @@ namespace Arrow\ORM\Schema;
  * @copyright  2011 Arrowplatform
  * @license    GNU LGPL
  */
-class Schema
+class Schema implements JsonSerializable
 {
 
     /**
@@ -110,6 +113,17 @@ class Schema
 
     }
 
+    /**
+     * Specify data which should be serialized to JSON
+     * @link http://php.net/manual/en/jsonserializable.jsonserialize.php
+     * @return mixed data which can be serialized by <b>json_encode</b>,
+     * which is a value of any type other than a resource.
+     * @since 5.4.0
+     */
+    public function jsonSerialize()
+    {
+        return $this->tables;
+    }
 }
 
 ?>

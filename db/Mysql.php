@@ -141,6 +141,7 @@ class Mysql implements ISQLGenerator
             $query .= " )";
         }
 
+
         return $query;
     }
 

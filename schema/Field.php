@@ -1,5 +1,8 @@
 <?php
 namespace Arrow\ORM\Schema;
+
+use JsonSerializable;
+
 /**
  * @author     Artur Kmera <artur.kmera@3code.pl>
  * @version    0.9
@@ -12,7 +15,7 @@ namespace Arrow\ORM\Schema;
  * @date 2011-07-18
  */
 
-class Field implements ISchemaElement
+class Field implements ISchemaElement, JsonSerializable
 {
 
     /**
@@ -210,6 +213,25 @@ class Field implements ISchemaElement
     }
 
 
+    /**
+     * Specify data which should be serialized to JSON
+     * @link http://php.net/manual/en/jsonserializable.jsonserialize.php
+     * @return mixed data which can be serialized by <b>json_encode</b>,
+     * which is a value of any type other than a resource.
+     * @since 5.4.0
+     */
+    public function jsonSerialize()
+    {
+        return[
+            "pKey" => $this->pKey,
+            "name" => $this->name,
+            "type" => $this->type,
+            "size" => $this->size,
+            "required" => $this->required,
+            "dafault" => $this->default,
+            "autoincrement" => $this->autoincrement,
+        ];
+    }
 }
 
 ?>
