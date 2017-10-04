@@ -269,13 +269,22 @@ class DB implements LoggerAwareInterface
             $this->synchronize();
         }
 
+        if (!file_exists($file)) {
+            /*$reader = new SchemaReader();
+            $schema = $reader->readSchemaFromFile($this->getSchemaFiles());
+            print "<pre>";
+            print_r($schema);
+            exit();*/
+
+
+            throw new Exception("File `$file` didn't generated");
+        }
+
         if ($this->trackSchemaChange && $this->lastSchemaChange && $this->lastSchemaChange > filemtime($file)) {
             $this->synchronize();
         }
 
-        if (!file_exists($file)) {
-            throw new Exception("File `$file` didn't generated");
-        }
+
 
         require $file;
     }
