@@ -167,7 +167,7 @@ class PersistentObject extends BaseTracker implements \ArrayAccess, \JsonSeriali
         if (!in_array($field, static::$fields) && $strict == true) {
             throw new Exception(array("msg" => "[PersistentObject] Field not exists " . static::$class . "['{$field}']", "class" => get_class($this), "field" => $field));
         }
-        if (isset($this->data[$field]) && $this->data[$field] != $value) {
+        if (isset($this->data[$field]) && $this->data[$field] !== $value) {
             $this->changedData[$field] = $this->data[$field];
             $this->data[$field] = $value;
             $this->fieldModified($this, $field, $this->changedData[$field], $value);
