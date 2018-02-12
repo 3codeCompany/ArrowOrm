@@ -93,7 +93,7 @@ use Arrow\ORM\Persistent\PersistentObject;
 /**
  * Class {$className}_Criteria
  * @package Arrow\ORM
- * @method \\{$table->getNamespace()}\\{$table->getClassName()}[] find()
+ * @method \\Arrow\\ORM\\Persistent\\DataSet|\\{$table->getNamespace()}\\{$table->getClassName()}[] find()
  * @method \\{$table->getNamespace()}\\{$table->getClassName()} findByKey()
  * @method \\{$table->getNamespace()}\\{$table->getClassName()} findFirst()
  */
