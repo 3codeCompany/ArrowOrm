@@ -1,6 +1,6 @@
 <?php
 
-namespace Arrow\ORM\DB;
+namespace Arrow\ORM\Connectors;
 
 /**
  * @author     Pawel Giemza
@@ -14,8 +14,11 @@ namespace Arrow\ORM\DB;
  * @date 2009-03-06
  */
 use ADebug;
+use Arrow\ORM\Connectors\Synchronizers\MysqlSynchronizer;
+use Arrow\ORM\DB\DBInferface;
 use Arrow\ORM\Persistent\Criteria;
 use Arrow\ORM\Persistent\JoinCriteria;
+use Arrow\ORM\Schema\AbstractSynchronizer;
 use function substr;
 use function var_dump;
 
@@ -24,26 +27,20 @@ use function var_dump;
  *
  * This class connects ORM to Mysql databases and generates sql statement from ORM objects (criteria, selector).
  */
-class Mysql implements ISQLGenerator
+class MysqlDBInterface implements DBInferface
 {
 
     /**
      * @var \PDO
      */
-    private static $connection;
+    private $connection;
 
     /**
      * @param \PDO $connection
      */
-    public static function setConnection(\PDO $connection)
+    public function setConnection(\PDO $connection)
     {
-        self::$connection = $connection;
-    }
-
-
-    public static function type()
-    {
-        return __CLASS__;
+        $this->connection = $connection;
     }
 
     /**
@@ -54,7 +51,7 @@ class Mysql implements ISQLGenerator
      *
      * @return Array
      */
-    public static function select($table, $criteria)
+    public function select($table, $criteria)
     {
         $data = $criteria->getData();
         $joins = "";
@@ -63,16 +60,16 @@ class Mysql implements ISQLGenerator
             $parseColumn = function ($column, $table) {
 
                 if (strpos($column, ":") == false) {
-                    if(strpos( $column, "raw:" ) === 0) {
-                        return self::$connection->quote(substr($column, 4));
-                    }else if ($column[0] == "'") {
-                        return self::$connection->quote(trim($column, "'"));
+                    if (strpos($column, "raw:") === 0) {
+                        return $this->connection->quote(substr($column, 4));
+                    } else if ($column[0] == "'") {
+                        return $this->connection->quote(trim($column, "'"));
                     }
                     return "`{$table}`.`{$column}`";
                 } else {
                     $tmp = explode(":", $column);
                     if ($tmp[0] == "raw") {
-                        return self::$connection->quote(substr($column, 4));
+                        return $this->connection->quote(substr($column, 4));
                     } else {
                         return "`" . $tmp[0] . "`" . ".`" . $tmp[1] . "`";
                     }
@@ -97,11 +94,11 @@ class Mysql implements ISQLGenerator
             }
         }
         /*        if($table == "shop_allegro_auctions") {
-                    $q = "SELECT " . ($criteria->isAggregated() ? 'SQL_CALC_FOUND_ROWS ' : '') . self::columnsToSQL($criteria) . " FROM $table $joins\n WHERE " . self::conditionsToSQL($criteria) . self::groupsToSQL($table, $criteria);
+                    $q = "SELECT " . ($criteria->isAggregated() ? 'SQL_CALC_FOUND_ROWS ' : '') . $this->columnsToSQL($criteria) . " FROM $table $joins\n WHERE " . $this->conditionsToSQL($criteria) . $this->groupsToSQL($table, $criteria);
                     \ADebug::log($q);
                 }*/
 
-        return "SELECT " . ($criteria->isAggregated() ? 'SQL_CALC_FOUND_ROWS ' : '') . self::columnsToSQL($criteria) . " FROM $table $joins\n WHERE " . self::conditionsToSQL($criteria) . self::groupsToSQL($table, $criteria);
+        return "SELECT " . ($criteria->isAggregated() ? 'SQL_CALC_FOUND_ROWS ' : '') . $this->columnsToSQL($criteria) . " FROM $table $joins\n WHERE " . $this->conditionsToSQL($criteria) . $this->groupsToSQL($table, $criteria);
 
     }
 
@@ -113,7 +110,7 @@ class Mysql implements ISQLGenerator
      *
      * @return int (id of object inserted into table)
      */
-    public static function insert($table, $data)
+    public function insert($table, $data)
     {
         $query = "";
         if (empty($data)) {
@@ -132,7 +129,7 @@ class Mysql implements ISQLGenerator
                     $query .= "NULL";
                 } else {
 
-                    $query .= (is_int($str) || is_float($str)) ? $str : self::$connection->quote($str);
+                    $query .= (is_int($str) || is_float($str)) ? $str : $this->connection->quote($str);
 
                 }
 
@@ -154,7 +151,7 @@ class Mysql implements ISQLGenerator
      *
      * @return String
      */
-    public static function update($table, array $data, $criteria)
+    public function update($table, array $data, $criteria)
     {
 
 
@@ -167,13 +164,13 @@ class Mysql implements ISQLGenerator
             if (is_null($value)) {
                 $query .= "NULL";
             } else {
-                $query .= (is_int($value) || is_float($value)) ? $value : self::$connection->quote($value);
+                $query .= (is_int($value) || is_float($value)) ? $value : $this->connection->quote($value);
             }
 
             $first = false;
         }
 
-        $query .= " WHERE " . self::conditionsToSQL($criteria);
+        $query .= " WHERE " . $this->conditionsToSQL($criteria);
 
         if (isset($_REQUEST["arrTest"])) {
             print $query . "<br />";
@@ -188,12 +185,11 @@ class Mysql implements ISQLGenerator
      * @param String $table
      * @param Criteria $criteria
      */
-    public static function delete($table, $criteria)
+    public function delete($table, $criteria)
     {
-        $query = "DELETE FROM $table WHERE " . self::conditionsToSQL($criteria);
+        $query = "DELETE FROM $table WHERE " . $this->conditionsToSQL($criteria);
         return $query;
     }
-
 
     private static function functionToSQL($column, $function, $data)
     {
@@ -225,7 +221,7 @@ class Mysql implements ISQLGenerator
         return $value;
     }
 
-    private static function getSqlValue($value)
+    private function getSqlValue($value)
     {
 
         if (is_null($value)) {
@@ -238,7 +234,7 @@ class Mysql implements ISQLGenerator
             return $value;
         }*/
 
-        return self::$connection->quote($value);
+        return $this->connection->quote($value);
 
     }
 
@@ -249,7 +245,7 @@ class Mysql implements ISQLGenerator
      *
      * @return String
      */
-    public static function conditionsToSQL(Criteria $criteria, $aliases = array())
+    public function conditionsToSQL(Criteria $criteria, $aliases = array())
     {
 
 
@@ -280,7 +276,7 @@ class Mysql implements ISQLGenerator
 
                 if ($cond['column'] && $cond['column'][0] == "'") {
                     $column = trim($cond['column'], "'");
-                } elseif(strpos( $cond['column'], "raw:" ) === 0) {
+                } elseif (strpos($cond['column'], "raw:") === 0) {
                     $column = substr($cond['column'], 4);
                 } else {
 
@@ -309,17 +305,17 @@ class Mysql implements ISQLGenerator
 
                     //if function passed
                     if (isset($cond["function"]) && $cond["function"]) {
-                        $column = self::functionToSQL($column, $cond['function'], $cond["functionData"]);
+                        $column = $this->functionToSQL($column, $cond['function'], $cond["functionData"]);
                     }
                 }
 
-                $value = self::valueToSQL($cond['value'], $condition, isset($cond["function"]) ? $cond["function"] : null);
+                $value = $this->valueToSQL($cond['value'], $condition, isset($cond["function"]) ? $cond["function"] : null);
                 if ($condition != Criteria::C_CUSTOM && $condition != Criteria::START) {
                     if (!is_array($value)) {
-                        $value = self::getSqlValue($value);
+                        $value = $this->getSqlValue($value);
                     } else {
                         foreach ($value as &$el) {
-                            $el = self::getSqlValue($el);
+                            $el = $this->getSqlValue($el);
                         }
                     }
                 }
@@ -447,9 +443,7 @@ class Mysql implements ISQLGenerator
         return $conditionString;
     }
 
-
-    //-------------------------------------------------------------------------------------------------------------
-    public static function columnsToSQL($criterias, $aliases = false)
+    public function columnsToSQL($criterias, $aliases = false)
     {
 
         if (!($criterias instanceof JoinCriteria)) {
@@ -476,9 +470,9 @@ class Mysql implements ISQLGenerator
             foreach ($criteriaData['columns'] as $col) {
 
 
-                if(strpos( $col['column'], "raw:" ) === 0) {
+                if (strpos($col['column'], "raw:") === 0) {
                     $tmp = substr($col['column'], 4);
-                }elseif ($col['column'][0] == "(" || $col['custom'] == true) {
+                } elseif ($col['column'][0] == "(" || $col['custom'] == true) {
                     $tmp = $col['column'];
                 } elseif ($col['column'][0] == "'") {
                     $tmp = trim($col['column'], "'");
@@ -526,8 +520,7 @@ class Mysql implements ISQLGenerator
         return " \n\t" . $columns . "\n";
     }
 
-//--------------------------------------------------------------------------------------------------------------
-    public static function groupsToSQL($tableName, $criterias, $aliases = false)
+    public function groupsToSQL($tableName, $criterias, $aliases = false)
     {
         // table alliases -  array of tables whose columns have to added under special aliases (ad also many times)
         $groupBy = '';
@@ -566,9 +559,9 @@ class Mysql implements ISQLGenerator
                 $tmp = array();
                 foreach ($criteriaData['group'] as $group) {
 
-                    if(strpos( $group, "raw:" ) === 0) {
-                        $tmp[] = substr($group,4);
-                    }elseif ($group[0] == "'") {
+                    if (strpos($group, "raw:") === 0) {
+                        $tmp[] = substr($group, 4);
+                    } elseif ($group[0] == "'") {
                         $tmp[] = "'" . trim($group, "'") . "'";
                     } else {
                         if (strpos($group, ":") == false) {
@@ -596,8 +589,8 @@ class Mysql implements ISQLGenerator
                         if ($order[0][0] == "'") {
                             $tmp = trim($order[0], "'");
 
-                        }elseif(strpos( $order[0], "raw:" ) === 0) {
-                            $tmp = self::$connection->quote(substr($order[0], 4));
+                        } elseif (strpos($order[0], "raw:") === 0) {
+                            $tmp = $this->connection->quote(substr($order[0], 4));
                         } else {
 
                             if (strpos($order[0], ":") == false) {
@@ -644,6 +637,11 @@ class Mysql implements ISQLGenerator
 
 
         return $groupBy . $orderBy . $limitBy;
+    }
+
+    public function getSynchronizer(): AbstractSynchronizer
+    {
+        return new MysqlSynchronizer($this->connection);
     }
 
 

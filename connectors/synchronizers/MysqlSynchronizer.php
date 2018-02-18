@@ -1,5 +1,5 @@
 <?php
-namespace Arrow\ORM\Schema\Synchronizers;
+namespace Arrow\ORM\Connectors\Synchronizers;
 
 use Arrow\ORM\Exception;
 use Arrow\ORM\Schema\AbstractMismatch;

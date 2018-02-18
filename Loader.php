@@ -1,6 +1,7 @@
 <?php
 namespace Arrow\ORM;
 use Arrow\ORM\DB\DB;
+use Arrow\ORM\DB\DBManager;
 
 /**
  * Created by JetBrains PhpStorm.
@@ -31,7 +32,7 @@ class Loader
     public static function includeClass($class)
     {
         if (strpos($class, "Arrow\\ORM\\ORM_") === 0) {
-            DB::getDB()->loadBaseModel($class);
+            DBManager::getDefaultRepository()->loadBaseModel($class);
         }
 
 

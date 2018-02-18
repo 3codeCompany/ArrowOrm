@@ -2,6 +2,7 @@
 namespace Arrow\ORM\Persistent;
 
 use Arrow\ORM\DB\DB;
+use Arrow\ORM\DB\DBManager;
 use Arrow\ORM\Exception;
 
 /**
@@ -43,7 +44,7 @@ class PersistentFactory
 
         //only delete if object exists in DB
         if ($object->getPKey()) {
-            DB::getDB()->delete($object);
+            DBManager::getDefaultRepository()->delete($object);
 
         }
         //after delete
@@ -77,7 +78,7 @@ class PersistentFactory
                     unset($data[$key]);
             }
 
-            DB::getDB()->update($data, $criteria);
+            DBManager::getDefaultRepository()->update($data, $criteria);
 
             //after save event
             if ($fireSaveEvents) {
@@ -102,7 +103,7 @@ class PersistentFactory
                 }
             }
             //create action
-            $id = DB::getDB()->insert($object);
+            $id = DBManager::getDefaultRepository()->insert($object);
             $object[$pk] = $id;
 
             //synchronize object with database
@@ -165,9 +166,9 @@ class PersistentFactory
 
         //get by criteria using joins
         if ($criteria instanceof JoinCriteria) {
-            return DB::getDB()->join($criteria, $criteria->isAggregated());
+            return DBManager::getDefaultRepository()->join($criteria, $criteria->isAggregated());
         } else {
-            return DB::getDB()->select($criteria, $criteria->isAggregated());
+            return DBManager::getDefaultRepository()->select($criteria, $criteria->isAggregated());
         }
     }
 

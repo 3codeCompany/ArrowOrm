@@ -28,7 +28,7 @@ use Psr\Log\LogLevel;
  * Interfaces OrmPersistent with specific DB handling classes
  *
  */
-class DB implements LoggerAwareInterface
+class DBRepository implements LoggerAwareInterface
 {
     /**
      * List of database connections
@@ -60,7 +60,7 @@ class DB implements LoggerAwareInterface
     /**
      * @var String path for generated classes
      */
-    private $generatedClassPath;
+    private $generatedClassesDir;
 
 
     /**
@@ -114,6 +114,28 @@ class DB implements LoggerAwareInterface
 
     private $logLevel = null;
 
+    private $getConfigCallback;
+
+
+    protected $dbInterface;
+    protected $connection;
+
+    public function __construct(
+        DBInferface $dbInferface,
+        $connection,
+        string $generatedClassesDir,
+        callable $getConfigCalback
+    )
+    {
+        $this->connectionInterface = $dbInferface;
+        $this->connection = $connection;
+        $this->generatedClassesDir = $generatedClassesDir;
+        $this->getConfigCallback = $getConfigCalback;
+
+
+    }
+
+
     public function log($level, $message, array $context = [])
     {
         if ($this->logger) {
@@ -122,30 +144,7 @@ class DB implements LoggerAwareInterface
     }
 
 
-    /**
-     * @param      $type
-     * @param      $name
-     * @param \PDO $pdoReference
-     * @param      $baseModelsPath
-     * @param bool $isDefault
-     *
-     * @return DB
-     * @throws Exception
-     */
-    public static function addDB($type, $name, \PDO $pdoReference, $baseModelsPath, $isDefault = false)
-    {
-        if ($type != Mysql::type()) {
-            throw new Exception("Not implemented");
-        }
 
-        self::$databases[$name] = new DB($type, $name, $pdoReference, $baseModelsPath);
-
-        if ($isDefault || self::$defaultDb == null) {
-            self::$defaultDb = self::$databases[$name];
-        }
-
-        return self::$databases[$name];
-    }
 
 
     /**
@@ -168,13 +167,6 @@ class DB implements LoggerAwareInterface
         throw new Exception("Database `$name` not added to ORM context");
     }
 
-    public function __construct($type, $name, \PDO $pdoReference, $generatedClassPath)
-    {
-        $this->type = $type;
-        $this->name = $name;
-        $this->DB = $pdoReference;
-        $this->generatedClassPath = $generatedClassPath;
-    }
 
     /**
      * @param $transformer ISchemaTransformer
@@ -190,17 +182,17 @@ class DB implements LoggerAwareInterface
     /**
      * @return String
      */
-    public function getGeneratedClassPath()
+    public function getgeneratedClassesDir()
     {
-        return $this->generatedClassPath;
+        return $this->generatedClassesDir;
     }
 
     public function select(Criteria $criteria, $asSimpleData = false)
     {
         $class = $criteria->getModel();
-        $type = $this->type;
-        $type::setConnection($this->DB);
-        $query = $type::select($class::getTable(), $criteria);
+        
+        //$this->connectionInterface->setConnection($this->connection);
+        $query = $this->connectionInterface->select($class::getTable(), $criteria);
 
         $res = $this->query($query);
         //return new DataSet($class, $res, $criteria, $asSimpleData);
@@ -212,9 +204,9 @@ class DB implements LoggerAwareInterface
     public function insert(PersistentObject $object)
     {
 
-        $type = $this->type;
-        $type::setConnection($this->DB);
-        $query = $type::insert($object::getTable(), $object->getData());
+        
+        
+        $query = $this->connectionInterface->insert($object::getTable(), $object->getData());
         return $this->execute($query);
 
     }
@@ -222,28 +214,28 @@ class DB implements LoggerAwareInterface
     public function update($data, Criteria $criteria)
     {
         $class = $criteria->getModel();
-        $type = $this->type;
-        $type::setConnection($this->DB);
-        $query = $type::update($class::getTable(), $data, $criteria);
+        
+        
+        $query = $this->connectionInterface->update($class::getTable(), $data, $criteria);
         return $this->execute($query);
     }
 
 
     public function delete(PersistentObject $object)
     {
-        $type = $this->type;
-        $type::setConnection($this->DB);
-        $query = $type::delete($object::getTable(), Criteria::query($object::getClass())->c($object::getPKField(), $object->getPKey()));
+        
+        $this->connectionInterface->setConnection($this->connection);
+        $query = $this->connectionInterface->delete($object::getTable(), Criteria::query($object::getClass())->c($object::getPKField(), $object->getPKey()));
 
         $this->execute($query);
     }
 
     public function join(JoinCriteria $criteria, $asSimpleData = false)
     {
-        $type = $this->type;
-        $type::setConnection($this->DB);
+        
+        $this->connectionInterface->setConnection($this->connection);
 
-        $query = $type::join($criteria);
+        $query = $this->connectionInterface->join($criteria);
 
         //try {
         $res = $this->query($query);
@@ -263,8 +255,8 @@ class DB implements LoggerAwareInterface
     public function loadBaseModel($class)
     {
 
-
-        $file = $this->generatedClassPath . str_replace(array("Arrow\\ORM\\", "\\"), array("", "_"), $class) . ".php";
+        
+        $file = $this->generatedClassesDir . str_replace(array("Arrow\\ORM\\", "\\"), array("", "_"), $class) . ".php";
 
         if (!file_exists($file)) {
             $this->synchronize();
@@ -286,14 +278,15 @@ class DB implements LoggerAwareInterface
         }
 
 
-
         require $file;
     }
 
     public function synchronize()
     {
         $reader = new SchemaReader();
-        $schema = $reader->readSchemaFromFile($this->getSchemaFiles());
+        $files = ($this->getConfigCallback)();
+
+        $schema = $reader->readSchemaFromFile($files);
 
         $this->generateBaseModels($schema);
         foreach ($this->transformers as $generator) {
@@ -302,10 +295,11 @@ class DB implements LoggerAwareInterface
 
         if ($this->synchronizationEnabled) {
             //todo synchronizacja z innymi bazami
-            $synchronizer = new MysqlSynchronizer($this->DB);
+            $synchronizer = $this->connectionInterface->getSynchronizer();
+
             $synchronizer->setPreventRemoveActions($this->isPreventRemoveActions());
             $synchronizer->setForeignKeysIgnore(true);
-            $mismaches = $synchronizer->getSchemaMismatches($schema, $this->DB);
+            $mismaches = $synchronizer->getSchemaMismatches($schema, $this->connection);
             foreach ($mismaches as $m) {
                 $synchronizer->resolveMismatch($m);
             }
@@ -316,7 +310,7 @@ class DB implements LoggerAwareInterface
     private function generateBaseModels(Schema $schema)
     {
         $generator = new BaseDomainClassGenerator();
-        $generator->targetDir = $this->generatedClassPath;
+        $generator->targetDir = $this->generatedClassesDir;
         $generator->generate($schema);
     }
 
@@ -360,7 +354,7 @@ class DB implements LoggerAwareInterface
             $start = microtime(true);
         }
 
-        $result = $this->DB->query($query);
+        $result = $this->connection->query($query);
 
         if ($this->logLevel == LogLevel::DEBUG) {
             $time = microtime(true) - $start;
@@ -378,7 +372,7 @@ class DB implements LoggerAwareInterface
             $start = microtime(true);
         }
 
-        $this->DB->exec($query);
+        $this->connection->exec($query);
 
         if ($this->logLevel == LogLevel::DEBUG) {
             $time = microtime(true) - $start;
@@ -386,7 +380,7 @@ class DB implements LoggerAwareInterface
         }
 
 
-        return $this->DB->lastInsertId();
+        return $this->connection->lastInsertId();
     }
 
     /**
