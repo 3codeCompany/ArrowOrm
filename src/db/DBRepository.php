@@ -18,11 +18,6 @@ use Arrow\ORM\Persistent\PersistentObject;
 use Arrow\ORM\Schema\BaseDomainClassGenerator;
 use Arrow\ORM\Schema\ISchemaTransformer;
 use Arrow\ORM\Schema\Schema;
-use Arrow\ORM\Schema\SchemaReader;
-use Arrow\ORM\Schema\Synchronizers\MysqlSynchronizer;
-use Psr\Log\LoggerAwareInterface;
-use Psr\Log\LoggerInterface;
-use Psr\Log\LogLevel;
 
 /**
  * Interfaces OrmPersistent with specific DB handling classes
@@ -144,9 +139,6 @@ class DBRepository implements LoggerAwareInterface
     }
 
 
-
-
-
     /**
      * Return database connection object to database specified in parameter. If not specified default (i.e. first defined in XML file) database will be accessed
      *
@@ -190,7 +182,7 @@ class DBRepository implements LoggerAwareInterface
     public function select(Criteria $criteria, $asSimpleData = false)
     {
         $class = $criteria->getModel();
-        
+
         //$this->connectionInterface->setConnection($this->connection);
         $query = $this->connectionInterface->select($class::getTable(), $criteria);
 
@@ -204,8 +196,7 @@ class DBRepository implements LoggerAwareInterface
     public function insert(PersistentObject $object)
     {
 
-        
-        
+
         $query = $this->connectionInterface->insert($object::getTable(), $object->getData());
         return $this->execute($query);
 
@@ -214,8 +205,8 @@ class DBRepository implements LoggerAwareInterface
     public function update($data, Criteria $criteria)
     {
         $class = $criteria->getModel();
-        
-        
+
+
         $query = $this->connectionInterface->update($class::getTable(), $data, $criteria);
         return $this->execute($query);
     }
@@ -223,7 +214,7 @@ class DBRepository implements LoggerAwareInterface
 
     public function delete(PersistentObject $object)
     {
-        
+
         $this->connectionInterface->setConnection($this->connection);
         $query = $this->connectionInterface->delete($object::getTable(), Criteria::query($object::getClass())->c($object::getPKField(), $object->getPKey()));
 
@@ -232,7 +223,7 @@ class DBRepository implements LoggerAwareInterface
 
     public function join(JoinCriteria $criteria, $asSimpleData = false)
     {
-        
+
         $this->connectionInterface->setConnection($this->connection);
 
         $query = $this->connectionInterface->join($criteria);
@@ -255,7 +246,7 @@ class DBRepository implements LoggerAwareInterface
     public function loadBaseModel($class)
     {
 
-        
+
         $file = $this->generatedClassesDir . str_replace(array("Arrow\\ORM\\", "\\"), array("", "_"), $class) . ".php";
 
         if (!file_exists($file)) {
@@ -283,10 +274,7 @@ class DBRepository implements LoggerAwareInterface
 
     public function synchronize()
     {
-        $reader = new SchemaReader();
-        $files = ($this->getConfigCallback)();
-
-        $schema = $reader->readSchemaFromFile($files);
+        $schema = ($this->getConfigCallback)();
 
         $this->generateBaseModels($schema);
         foreach ($this->transformers as $generator) {

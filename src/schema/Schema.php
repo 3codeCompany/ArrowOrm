@@ -38,6 +38,11 @@ class Schema implements JsonSerializable
      */
     private $tables = array();
 
+
+    public static function fromFiles($files){
+
+    }
+
     public function getTables()
     {
         return $this->tables;
@@ -48,7 +53,7 @@ class Schema implements JsonSerializable
      *
      * @param string $class
      *
-     * @return Table
+     * @return void
      * @todo implement
      */
     public function getTableByClass($class)
@@ -60,6 +65,7 @@ class Schema implements JsonSerializable
      * Add table to schema
      *
      * @param Table $table
+     * @throws SchemaException
      */
     public function addTable(Table $table)
     {
