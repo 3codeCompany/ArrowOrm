@@ -31,7 +31,7 @@ class DBManager
 
     }
 
-    public static function getRepository()
+    public static function getRepository($name)
     {
         return self::$repositories[$name];
     }

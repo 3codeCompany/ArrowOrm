@@ -46,7 +46,7 @@ class BaseDomainClassGenerator implements ISchemaTransformer
         foreach ($schema->getTables() as $table) {
             $namespace = str_replace("\\", "_", $table->getNamespace());
 
-            file_put_contents($this->targetDir . "ORM" . ($namespace ? "_" . $namespace : "") . "_" . $table->getClassName() . ".php", $this->generateClass($table));
+            file_put_contents($this->targetDir . DIRECTORY_SEPARATOR . "ORM" . ($namespace ? "_" . $namespace : "") . "_" . $table->getClassName() . ".php", $this->generateClass($table));
         }
     }
 
@@ -200,11 +200,11 @@ EOT;
 
                 $fName = "_conn_" . ucfirst($connection->name);
                 $fName = $type == "criteria" ? $fName . "Criteria" : $fName;
-                $lastTable = $connection->tables[count($connection->tables)-1]->getTable();
-                $_namespace = str_replace("\\","_",$lastTable->getNamespace());
+                $lastTable = $connection->tables[count($connection->tables) - 1]->getTable();
+                $_namespace = str_replace("\\", "_", $lastTable->getNamespace());
                 $_className = "ORM" . ($_namespace ? "_" . $_namespace : "") . "_{$lastTable->getClassName()}";
 
-                $_className = $type == "criteria" ? $_className . "_Criteria" : $_className."[]";
+                $_className = $type == "criteria" ? $_className . "_Criteria" : $_className . "[]";
                 $x = "
                 /**
                  * @return {$_className}
@@ -226,7 +226,7 @@ EOT;
                         $nextColumn = $connection->tables[$index + 1]->getLocal();
                         $x = "\$crit = {$connTable->getTable()->getClass()}::get()->c('{$connTable->getForeign()}', \$this->getValue('{$connTable->getLocal()}'));";
                         $this->pl($x, $str);
-                        foreach($connTable->getAdditionalConditions() as $condition){
+                        foreach ($connTable->getAdditionalConditions() as $condition) {
                             $this->pl("\$crit->c('{$condition["field"]}', '{$condition["value"]}');", $str);
                         }
                         $x = "\$result = \$crit->findAsFieldArray(  '{$nextColumn}' );";
@@ -236,7 +236,7 @@ EOT;
                         $x = "\$crit = {$connTable->getTable()->getClass()}::get()->c('{$connTable->getForeign()}', \$result, Criteria::C_IN);";
                         $this->pl($x, $str);
 
-                        foreach($connTable->getAdditionalConditions() as $condition){
+                        foreach ($connTable->getAdditionalConditions() as $condition) {
                             $this->pl("\$crit->c('{$condition["field"]}', '{$condition["value"]}');", $str);
                         }
 

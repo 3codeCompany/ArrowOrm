@@ -98,7 +98,8 @@ class MysqlDBInterface implements DBInferface
                     \ADebug::log($q);
                 }*/
 
-        return "SELECT " . ($criteria->isAggregated() ? 'SQL_CALC_FOUND_ROWS ' : '') . $this->columnsToSQL($criteria) . " FROM $table $joins\n WHERE " . $this->conditionsToSQL($criteria) . $this->groupsToSQL($table, $criteria);
+        $q = "SELECT " . ($criteria->isAggregated() ? 'SQL_CALC_FOUND_ROWS ' : '') . $this->columnsToSQL($criteria) . " FROM $table $joins\n WHERE " . $this->conditionsToSQL($criteria) . $this->groupsToSQL($table, $criteria);
+        return $this->connection->query($q);
 
     }
 
@@ -110,7 +111,7 @@ class MysqlDBInterface implements DBInferface
      *
      * @return int (id of object inserted into table)
      */
-    public function insert($table, $data)
+    public function insert($table, $data): string
     {
         $query = "";
         if (empty($data)) {
@@ -139,7 +140,8 @@ class MysqlDBInterface implements DBInferface
         }
 
 
-        return $query;
+        $this->connection->exec($query);
+        return $this->connection->lastInsertId();
     }
 
     /**
@@ -176,7 +178,8 @@ class MysqlDBInterface implements DBInferface
             print $query . "<br />";
         }
 
-        return $query;
+        return $this->connection->exec($query);
+
     }
 
     /**
@@ -188,7 +191,7 @@ class MysqlDBInterface implements DBInferface
     public function delete($table, $criteria)
     {
         $query = "DELETE FROM $table WHERE " . $this->conditionsToSQL($criteria);
-        return $query;
+        return $this->connection->exec($query);
     }
 
     private static function functionToSQL($column, $function, $data)

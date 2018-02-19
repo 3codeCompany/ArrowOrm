@@ -9,7 +9,9 @@
 namespace ORM\Tests\Objects;
 
 
-class Post
+use Arrow\ORM\ORM_ORM_Tests_Objects_Post;
+
+class Post extends ORM_ORM_Tests_Objects_Post
 {
 
 }

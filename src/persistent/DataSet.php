@@ -1,4 +1,5 @@
 <?php
+
 namespace Arrow\ORM\Persistent;
 /**
  * Created by JetBrains PhpStorm.
@@ -33,11 +34,15 @@ class DataSet implements \Iterator, \ArrayAccess, \Countable, \Serializable, \Js
     protected $criteria = false;
     private $cacheEnabled = true;
 
-    public function __construct($class, \PDOStatement $result, $criteria, $simple = false)
+    public function __construct($class, $result, $criteria, $simple = false)
     {
         $this->class = $class;
         $this->result = $result;
-        $this->count = $result->rowCount();
+        if ($this->result instanceof \PDOStatement) {
+            $this->count = $result->rowCount();
+        } else {
+            $this->count = count($result);
+        }
         $this->simple = $simple;
         $this->criteria = $criteria;
     }
@@ -79,7 +84,15 @@ class DataSet implements \Iterator, \ArrayAccess, \Countable, \Serializable, \Js
 
     protected function getNextRow($fetchType)
     {
-        $row = $this->result->fetch(\PDO::FETCH_ASSOC);
+        if ($this->result instanceof \PDOStatement) {
+            $row = $this->result->fetch(\PDO::FETCH_ASSOC);
+        } else {
+            $row = current($this->result);
+            if (!empty ($row)) {
+                next($this->result);
+            }
+        }
+
         if (empty ($row)) {
             return false;
         }
@@ -93,22 +106,22 @@ class DataSet implements \Iterator, \ArrayAccess, \Countable, \Serializable, \Js
         return $this->initiateObject($row);
     }
 
-/*    protected function valuesFilter($row)
-    {
-        array_walk(
-            $row, function (&$val) {
-                $val = str_replace("NULL", null, $val);
-            }
-        );
-        return $row;
-    }*/
+    /*    protected function valuesFilter($row)
+        {
+            array_walk(
+                $row, function (&$val) {
+                    $val = str_replace("NULL", null, $val);
+                }
+            );
+            return $row;
+        }*/
 
     /**
      * @param $data
      *
      * @return PersistentObject
      */
-    protected function  initiateObject($data)
+    protected function initiateObject($data)
     {
         /** @var $object PersistentObject */
         $object = new $this->class();
@@ -127,7 +140,8 @@ class DataSet implements \Iterator, \ArrayAccess, \Countable, \Serializable, \Js
         return $this->cacheEnabled;
     }
 
-    public function getClass(){
+    public function getClass()
+    {
         return $this->class;
     }
 
@@ -144,17 +158,19 @@ class DataSet implements \Iterator, \ArrayAccess, \Countable, \Serializable, \Js
         return $this->simple;
     }
 
-    public function collectFieldsAsArray($field){
+    public function collectFieldsAsArray($field)
+    {
         $tmp = array();
-        while( $el = $this->fetch() ){
+        while ($el = $this->fetch()) {
             $tmp[] = $el[$field];
         }
         return $tmp;
     }
 
-    public function collectKeys(){
+    public function collectKeys()
+    {
         $class = $this->class;
-        return $this->collectFieldsAsArray( $class::getPKField());
+        return $this->collectFieldsAsArray($class::getPKField());
     }
 
 
@@ -224,7 +240,7 @@ class DataSet implements \Iterator, \ArrayAccess, \Countable, \Serializable, \Js
      * @param mixed $offset <p>
      *                      The offset to assign the value to.
      * </p>
-     * @param mixed $value  <p>
+     * @param mixed $value <p>
      *                      The value to set.
      * </p>
      *
@@ -368,7 +384,7 @@ class DataSet implements \Iterator, \ArrayAccess, \Countable, \Serializable, \Js
 
     public function delete()
     {
-        foreach($this as $el)
+        foreach ($this as $el)
             $el->delete();
     }
 

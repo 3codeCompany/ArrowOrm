@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<schema>
+    <table name="users" class="ORM\Tests\Objects\User">
+        <field name="id" type="INTEGER" primaryKey="true" autoIncrement="true"/>
+        <field name="active" type="INTEGER" size="1"/>
+        <field name="login" type="VARCHAR" size="255"/>
+        <field name="email" type="VARCHAR" size="255"/>
+    </table>
+
+    <table name="posts" class="ORM\Tests\Objects\Post">
+        <field name="id" type="INTEGER" primaryKey="true" autoIncrement="true"/>
+        <field name="user_id" type="INTEGER" size="5"/>
+        <field name="created" type="DATETIME"/>
+        <field name="title" type="VARCHAR" size="255"/>
+        <field name="content" type="text"/>
+    </table>
+
+</schema>

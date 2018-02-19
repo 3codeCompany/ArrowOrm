@@ -6,10 +6,12 @@
  * Time: 22:37
  */
 
-namespace ORM\Tests\Objects\User;
+namespace ORM\Tests\Objects;
 
 
-class User
+use Arrow\ORM\ORM_ORM_Tests_Objects_User;
+
+class User extends ORM_ORM_Tests_Objects_User
 {
 
 }
