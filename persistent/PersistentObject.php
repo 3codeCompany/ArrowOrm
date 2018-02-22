@@ -510,7 +510,7 @@ class PersistentObject extends BaseTracker implements \ArrayAccess, \JsonSeriali
         if (!empty($this->virtualFields)) {
             $array = [];
             foreach ($this->virtualFields as $field => $accessors) {
-                $array[$field] = $accessors["getter"]();
+                $array[$field] = $accessors["getter"]($field, $this);
             }
             $toSerialize = array_merge($toSerialize, $array);
         }
