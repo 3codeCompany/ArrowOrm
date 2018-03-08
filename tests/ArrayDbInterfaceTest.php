@@ -8,29 +8,37 @@ use Arrow\ORM\DB\DBRepository;
 use Arrow\ORM\Schema\SchemaReader;
 use ORM\Tests\Objects\User;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\DbUnit\TestCaseTrait;
 
 final class ArrayDbInterfaceTest extends TestCase
 {
+    //use TestCaseTrait;
 
-    protected function getDataSet()
+
+    public function getConnection()
     {
-        return
-            [
-                'guestbook' => [
-                    [
-                        'id' => 1,
-                        'content' => 'Hello buddy!',
-                        'user' => 'joe',
-                        'created' => '2010-04-24 17:15:23'
-                    ],
-                    [
-                        'id' => 2,
-                        'content' => 'I like it!',
-                        'user' => null,
-                        'created' => '2010-04-26 12:14:20'
-                    ],
-                ],
-            ];
+    }
+
+    private function getUsersDataSet()
+    {
+        return [
+            "1" => [
+                User::F_ID => "1",
+                User::F_LOGIN => "test",
+                User::F_EMAIL => "test@test.com",
+            ],
+            "2" => [
+                User::F_ID => "2",
+                User::F_LOGIN => "test",
+                User::F_EMAIL => "test@test.com",
+            ],
+            "2" => [
+                User::F_ID => "2",
+                User::F_LOGIN => "test",
+                User::F_EMAIL => "test@test.com",
+            ],
+        ];
+
     }
 
     public static function setUpBeforeClass()/* The :void return type declaration that should be here would cause a BC issue */
@@ -83,18 +91,216 @@ final class ArrayDbInterfaceTest extends TestCase
 
         $repo = $this->initRepository('repo1');
 
+        User::create([
+            User::F_LOGIN => "test",
+            User::F_EMAIL => "test@test.com",
+        ]);
+
+        $db = $repo->getConnectionInterface()->getDB();
+
+        $this->assertEquals([
+            "users" => [
+                0 => [
+                    "id" => 0,
+                    "login" => "test",
+                    "email" => "test@test.com"
+                ]
+            ]
+        ], $db);
+
+    }
+
+
+    public function testCanObjectCanBeInsertedWithCustomId()
+    {
+
+        $repo = $this->initRepository('repo1');
+
+        User::create([
+            User::F_ID => "2",
+            User::F_LOGIN => "test",
+            User::F_EMAIL => "test@test.com",
+        ]);
+
+        $db = $repo->getConnectionInterface()->getDB();
+
+        $this->assertEquals([
+            "users" => [
+                "2" => [
+                    "id" => "2",
+                    "login" => "test",
+                    "email" => "test@test.com"
+                ]
+            ]
+        ], $db);
+
+    }
+
+    public function testCanObjectsSetCanBeInserted()
+    {
+        $repo = $this->initRepository('repo1');
+
+        $dataSet = $this->getUsersDataSet();
+        User::createSet($dataSet);
+
+        $db = $repo->getConnectionInterface()->getDB();
+
+        $this->assertEquals([
+            "users" => $dataSet
+        ], $db);
+    }
+
+    public function testCanObjectCanBeDeleted()
+    {
+
+        $repo = $this->initRepository('repo1');
+
         $user = User::create([
             User::F_LOGIN => "test",
             User::F_EMAIL => "test@test.com",
         ]);
 
+        $user->delete();
+
+        $db = $repo->getConnectionInterface()->getDB();
+
+        $this->assertEquals([
+            "users" => []
+        ], $db);
+
+
+    }
+
+    public function testCanObjectCanBeUpdated()
+    {
+
+        $repo = $this->initRepository('repo1');
+
+        $user = User::create([
+            User::F_LOGIN => "test",
+            User::F_EMAIL => "test@test.com",
+        ]);
+
+        $user->_login("changedName");
+
+        $db = $repo->getConnectionInterface()->getDB();
+
+        $this->assertEquals([
+            "users" => [
+                0 => [
+                    "id" => 0,
+                    "login" => "test",
+                    "email" => "test@test.com"
+                ]
+            ]
+        ], $db);
+
         $user->save();
 
         $db = $repo->getConnectionInterface()->getDB();
 
-        $this->assertEquals(["users" => [0 => ["id" => 0, "login" => "test", "email" => "test@test.com"]]], $db);
+        $this->assertEquals([
+            "users" => [
+                0 => [
+                    "id" => 0,
+                    "login" => "changedName",
+                    "email" => "test@test.com"
+                ]
+            ]
+        ], $db);
+
+    }
+
+    public function testSchemaBadColumn()
+    {
+
+        $this->expectException(\Arrow\ORM\Exception::class);
+
+        $repo = $this->initRepository('repo1');
+
+        $user = User::create([
+            "bad_column" => "test",
+            User::F_EMAIL => "test@test.com",
+        ]);
+
+    }
 
 
+    public function testConditionEqual()
+    {
+        $repo = $this->initRepository('repo1');
+
+        $dataSet = $this->getUsersDataSet();
+        User::createSet($dataSet);
+
+
+    }
+
+    public function testConditionGreaterEqual()
+    {
+
+    }
+
+    public function testConditionGreaterThan()
+    {
+    }
+
+    public function testConditionLessEqual()
+    {
+    }
+
+    public function testConditionLessThan()
+    {
+    }
+
+    public function testConditionIn()
+    {
+    }
+
+    public function testConditionNotIn()
+    {
+    }
+
+    public function testConditionBetween()
+    {
+    }
+
+    public function testConditionLike()
+    {
+    }
+
+    public function testConditionNotLike()
+    {
+    }
+
+    public function testConditionBitOr()
+    {
+    }
+
+    public function testConditionBitAnd()
+    {
+    }
+
+    public function testConditionBitXor()
+    {
+    }
+
+
+    public function testConditionGroupingAnd()
+    {
+    }
+
+    public function testConditionGroupingOr()
+    {
+    }
+
+
+    public function testListOrder()
+    {
+    }
+
+    public function testListGroup()
+    {
     }
 
 

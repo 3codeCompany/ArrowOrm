@@ -25,6 +25,7 @@ class PersistentObject extends BaseTracker implements \ArrayAccess, \JsonSeriali
     protected $changedData = [];
     protected $modified = false;
 
+
     public function fastDataLoad($data)
     {
         $this->data = $data;
@@ -52,13 +53,21 @@ class PersistentObject extends BaseTracker implements \ArrayAccess, \JsonSeriali
     {
         $class = static::$class;
         $obj = new $class($data);
-        $obj->save();
+        $obj->save(true);
         $obj->modified = true;
         return $obj;
     }
 
+    public static function createSet($data)
+    {
+        foreach ($data as $row) {
+            static::create($row);
+        }
+    }
+
     /**
      * @return Criteria
+     * @throws Exception
      */
     public static function get()
     {
@@ -110,6 +119,11 @@ class PersistentObject extends BaseTracker implements \ArrayAccess, \JsonSeriali
     public function getPKey()
     {
         return isset($this->data[static::$PKeyField]) ? $this->data[static::$PKeyField] : null;
+    }
+
+    public static function getPKeyField()
+    {
+        return static::$PKeyField;
     }
 
     public function getValue($field)
@@ -170,6 +184,7 @@ class PersistentObject extends BaseTracker implements \ArrayAccess, \JsonSeriali
 
     public function setValue($field, $value, $strict = true)
     {
+
         if (!in_array($field, static::$fields) && $strict == true) {
             if (isset($this->virtualFields[$field])) {
                 $this->virtualFields[$field]["setter"]($value);
@@ -282,11 +297,9 @@ class PersistentObject extends BaseTracker implements \ArrayAccess, \JsonSeriali
         return null;
     }
 
-    public function save()
+    public function save($forceInsert = false)
     {
-
-
-        PersistentFactory::save($this);
+        PersistentFactory::save($this, true, $forceInsert);
 
         return $this;
     }

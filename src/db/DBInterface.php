@@ -13,11 +13,11 @@ use Psr\Log\LoggerAwareInterface;
  * Time: 22:03
  * To change this template use File | Settings | File Templates.
  */
-interface DBInferface extends LoggerAwareInterface
+interface DBInterface extends LoggerAwareInterface
 {
     public function select(string $table, Criteria $criteria);
 
-    public function insert(string $table, array $data): string;
+    public function insert(string $table, array $data, string $pKeyField): string;
 
     public function update(string $table, array $data, Criteria $criteria);
 

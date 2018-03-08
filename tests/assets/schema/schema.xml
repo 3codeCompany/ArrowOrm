@@ -2,9 +2,13 @@
 <schema>
     <table name="users" class="ORM\Tests\Objects\User">
         <field name="id" type="INTEGER" primaryKey="true" autoIncrement="true"/>
+        <field name="created" type="DATETIME"/>
         <field name="active" type="INTEGER" size="1"/>
         <field name="login" type="VARCHAR" size="255"/>
+        <field name="name" type="VARCHAR" size="255"/>
         <field name="email" type="VARCHAR" size="255"/>
+        <field name="phone" type="VARCHAR" size="255"/>
+        <field name="age" type="INT" size="2"/>
     </table>
 
     <table name="posts" class="ORM\Tests\Objects\Post">

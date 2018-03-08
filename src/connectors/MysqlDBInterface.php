@@ -15,7 +15,7 @@ namespace Arrow\ORM\Connectors;
  */
 use ADebug;
 use Arrow\ORM\Connectors\Synchronizers\MysqlSynchronizer;
-use Arrow\ORM\DB\DBInferface;
+use Arrow\ORM\DB\DBInterface;
 use Arrow\ORM\Persistent\Criteria;
 use Arrow\ORM\Persistent\JoinCriteria;
 use Arrow\ORM\Schema\AbstractSynchronizer;
@@ -27,7 +27,7 @@ use function var_dump;
  *
  * This class connects ORM to Mysql databases and generates sql statement from ORM objects (criteria, selector).
  */
-class MysqlDBInterface implements DBInferface
+class MysqlDBInterface implements DBInterface
 {
 
     /**

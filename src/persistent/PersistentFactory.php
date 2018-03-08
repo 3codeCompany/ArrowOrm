@@ -1,4 +1,5 @@
 <?php
+
 namespace Arrow\ORM\Persistent;
 
 use Arrow\ORM\DB\DB;
@@ -43,7 +44,7 @@ class PersistentFactory
         self::dispatchEvent('beforeObjectDelete', $object);
 
         //only delete if object exists in DB
-        if ($object->getPKey()) {
+        if ($object->getPKey() !== null) {
             DBManager::getDefaultRepository()->delete($object);
 
         }
@@ -73,8 +74,8 @@ class PersistentFactory
 
             //remove join values
             $data = $object->getData();
-            foreach($data as $key => $val){
-                if(strpos($key,":") !== false)
+            foreach ($data as $key => $val) {
+                if (strpos($key, ":") !== false)
                     unset($data[$key]);
             }
 
@@ -152,7 +153,7 @@ class PersistentFactory
      * If you want to return only part of objects stored in database use Criteria object.
      *
      * @param Criteria $criteria
-     * @param String   $class
+     * @param String $class
      *
      * @return DataSet
      */

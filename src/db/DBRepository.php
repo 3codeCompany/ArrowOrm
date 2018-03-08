@@ -120,7 +120,7 @@ class DBRepository implements LoggerAwareInterface
     private $connectionInterface;
 
     public function __construct(
-        DBInferface $dbInferface,
+        DBInterface $dbInferface,
         string $generatedClassesDir,
         callable $getConfigCallback
     )
@@ -132,16 +132,13 @@ class DBRepository implements LoggerAwareInterface
     }
 
 
-
     /**
-     * @return DBInferface
+     * @return DBInterface
      */
-    public function getConnectionInterface(): DBInferface
+    public function getConnectionInterface(): DBInterface
     {
         return $this->connectionInterface;
     }
-
-
 
 
     public function log($level, $message, array $context = [])
@@ -182,7 +179,7 @@ class DBRepository implements LoggerAwareInterface
 
     public function insert(PersistentObject $object)
     {
-        return $this->connectionInterface->insert($object::getTable(), $object->getData());
+        return $this->connectionInterface->insert($object::getTable(), $object->getData(), $object::getClass()::getPKeyField());
     }
 
     public function update($data, Criteria $criteria)

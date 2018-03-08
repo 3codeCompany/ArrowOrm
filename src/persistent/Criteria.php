@@ -74,7 +74,10 @@ class Criteria
      *
      * @var Array
      */
-    private $data = array("group");
+    private $data = [
+        "group",
+        "conditions" => [],
+    ];
     /**
      * List of nested groups (AND/OR)
      *
