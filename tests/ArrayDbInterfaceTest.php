@@ -5,40 +5,33 @@ declare(strict_types=1);
 use Arrow\ORM\DB\Connectors\ArrayDBInterface;
 use Arrow\ORM\DB\DBManager;
 use Arrow\ORM\DB\DBRepository;
+use Arrow\ORM\Persistent\Criteria;
 use Arrow\ORM\Schema\SchemaReader;
 use ORM\Tests\Objects\User;
 use PHPUnit\Framework\TestCase;
-use PHPUnit\DbUnit\TestCaseTrait;
 
 final class ArrayDbInterfaceTest extends TestCase
 {
     //use TestCaseTrait;
 
-
-    public function getConnection()
-    {
-    }
+    private $cachedUsersDataset = null;
 
     private function getUsersDataSet()
     {
-        return [
-            "1" => [
-                User::F_ID => "1",
-                User::F_LOGIN => "test",
-                User::F_EMAIL => "test@test.com",
-            ],
-            "2" => [
-                User::F_ID => "2",
-                User::F_LOGIN => "test",
-                User::F_EMAIL => "test@test.com",
-            ],
-            "2" => [
-                User::F_ID => "2",
-                User::F_LOGIN => "test",
-                User::F_EMAIL => "test@test.com",
-            ],
-        ];
 
+        if ($this->cachedUsersDataset == null) {
+            $content = file_get_contents(__DIR__ . DIRECTORY_SEPARATOR . "assets" . DIRECTORY_SEPARATOR . "data" . DIRECTORY_SEPARATOR . "users.json");
+            $rowSet = json_decode($content, true);
+
+            $indexedRowSet = [];
+            //assign id to keys
+            foreach ($rowSet as $row) {
+                $indexedRowSet[$row["id"]] = $row;
+            }
+            $this->cachedUsersDataset = $indexedRowSet;
+        }
+
+        return $this->cachedUsersDataset;
     }
 
     public static function setUpBeforeClass()/* The :void return type declaration that should be here would cause a BC issue */
@@ -52,7 +45,7 @@ final class ArrayDbInterfaceTest extends TestCase
      * @param string $name
      * @return DbRepository
      */
-    private function initRepository($name = "array", &$repo = null)
+    private function initRepository($name = "array")
     {
         $arrayRepository = new DBRepository(
             new ArrayDBInterface([]),
@@ -70,9 +63,18 @@ final class ArrayDbInterfaceTest extends TestCase
         return DBManager::getRepository($name);
     }
 
+    private function initRepositoryWithData()
+    {
+        $repo = $this->initRepository();
+        $dataSet = $this->getUsersDataSet();
+        User::createSet($dataSet);
+        return $repo;
+
+    }
+
     public function testCanSingleBeInitiated(): void
     {
-        $this->initRepository();
+        $repo = $this->initRepository();
         $this->assertInstanceOf(DBRepository::class, DBManager::getRepository("array"));
     }
 
@@ -89,7 +91,7 @@ final class ArrayDbInterfaceTest extends TestCase
     public function testCanObjectCanBeInserted()
     {
 
-        $repo = $this->initRepository('repo1');
+        $repo = $this->initRepository();
 
         User::create([
             User::F_LOGIN => "test",
@@ -114,7 +116,7 @@ final class ArrayDbInterfaceTest extends TestCase
     public function testCanObjectCanBeInsertedWithCustomId()
     {
 
-        $repo = $this->initRepository('repo1');
+        $repo = $this->initRepository();
 
         User::create([
             User::F_ID => "2",
@@ -138,7 +140,7 @@ final class ArrayDbInterfaceTest extends TestCase
 
     public function testCanObjectsSetCanBeInserted()
     {
-        $repo = $this->initRepository('repo1');
+        $repo = $this->initRepository();
 
         $dataSet = $this->getUsersDataSet();
         User::createSet($dataSet);
@@ -153,7 +155,7 @@ final class ArrayDbInterfaceTest extends TestCase
     public function testCanObjectCanBeDeleted()
     {
 
-        $repo = $this->initRepository('repo1');
+        $repo = $this->initRepository();
 
         $user = User::create([
             User::F_LOGIN => "test",
@@ -174,7 +176,7 @@ final class ArrayDbInterfaceTest extends TestCase
     public function testCanObjectCanBeUpdated()
     {
 
-        $repo = $this->initRepository('repo1');
+        $repo = $this->initRepository();
 
         $user = User::create([
             User::F_LOGIN => "test",
@@ -216,7 +218,7 @@ final class ArrayDbInterfaceTest extends TestCase
 
         $this->expectException(\Arrow\ORM\Exception::class);
 
-        $repo = $this->initRepository('repo1');
+        $repo = $this->initRepository();
 
         $user = User::create([
             "bad_column" => "test",
@@ -228,52 +230,175 @@ final class ArrayDbInterfaceTest extends TestCase
 
     public function testConditionEqual()
     {
-        $repo = $this->initRepository('repo1');
+        $this->initRepositoryWithData();
 
-        $dataSet = $this->getUsersDataSet();
-        User::createSet($dataSet);
+        $users = User::get()
+            ->_age(20)
+            ->find();
 
+        $this->assertCount(2, $users);
+
+        $this->assertEquals("Kibblewhite", $users[0]->_login());
+        $this->assertEquals("Tolefree", $users[1]->_login());
 
     }
 
+
     public function testConditionGreaterEqual()
     {
+        $this->initRepositoryWithData();
+
+        $users = User::get()
+            ->_age(88, Criteria::C_GREATER_EQUAL)
+            ->find();
+
+        $this->assertCount(3, $users);
+
+        foreach ($users as $user) {
+            $this->assertGreaterThanOrEqual(88, $user->_age());
+        }
 
     }
 
     public function testConditionGreaterThan()
     {
+        $this->initRepositoryWithData();
+
+        $users = User::get()
+            ->_age(88, Criteria::C_GREATER_THAN)
+            ->find();
+
+
+        $this->assertCount(2, $users);
+        foreach ($users as $user) {
+            $this->assertGreaterThan(88, $user->_age());
+        }
     }
 
     public function testConditionLessEqual()
     {
+        $this->initRepositoryWithData();
+
+        $users = User::get()
+            ->_age(24, Criteria::C_LESS_EQUAL)
+            ->find();
+
+        $this->assertCount(3, $users);
+
+        foreach ($users as $user) {
+            $this->assertLessThanOrEqual(24, $user->_age());
+        }
     }
 
     public function testConditionLessThan()
     {
+        $this->initRepositoryWithData();
+
+        $users = User::get()
+            ->_age(24, Criteria::C_LESS_THAN)
+            ->find();
+
+        $this->assertCount(2, $users);
+
+        foreach ($users as $user) {
+            $this->assertLessThan(24, $user->_age());
+        }
     }
 
     public function testConditionIn()
     {
+        $this->initRepositoryWithData();
+
+        $condition = [24, 99, 200];
+        $users = User::get()
+            ->_age($condition, Criteria::C_IN)
+            ->find();
+
+        $this->assertCount(3, $users);
+
+        foreach ($users as $user) {
+            $this->assertContains($user->_age(), $condition);
+        }
     }
 
     public function testConditionNotIn()
     {
+        $this->initRepositoryWithData();
+
+        $condition = [24, 99, 200];
+        $users = User::get()
+            ->_age($condition, Criteria::C_NOT_IN)
+            ->find();
+
+        $this->assertCount(17, $users);
+
+        foreach ($users as $user) {
+            $this->assertNotContains($user->_age(), $condition);
+        }
+
+    }
+
+    public function testConditionBetweenDates()
+    {
+        $this->initRepositoryWithData();
+
+        $users = User::get()
+            ->_created(["2017-05-01", "2017-10-15"], Criteria::C_BETWEEN)
+            ->find();
+
+
+        $this->assertCount(7, $users);
+
     }
 
     public function testConditionBetween()
     {
+        $this->initRepositoryWithData();
+
+        $users = User::get()
+            ->_age([20, 40], Criteria::C_BETWEEN)
+            ->find();
+
+
+        $this->assertCount(2, $users);
+
+        foreach ($users as $user) {
+            $this->assertGreaterThan(20, $user->_age());
+            $this->assertLessThan(40, $user->_age());
+        }
     }
 
     public function testConditionLike()
     {
+        $this->initRepositoryWithData();
+
+        $users = User::get()
+            ->_login("%nn%", Criteria::C_LIKE)
+            ->find();
+
+        $this->assertCount(2, $users);
+
+        foreach ($users as $user) {
+            $this->assertContains("nn", $user->_login());
+        }
     }
 
     public function testConditionNotLike()
     {
+        $this->initRepositoryWithData();
+
+        $users = User::get()
+            ->_login("%nn%", Criteria::C_NOT_LIKE)
+            ->find();
+
+        $this->assertCount(18, $users);
+
+        foreach ($users as $user) {
+            $this->assertNotContains("nn", $user->_login());
+        }
     }
 
-    public function testConditionBitOr()
+    /*public function testConditionBitOr()
     {
     }
 
@@ -283,7 +408,7 @@ final class ArrayDbInterfaceTest extends TestCase
 
     public function testConditionBitXor()
     {
-    }
+    }*/
 
 
     public function testConditionGroupingAnd()
@@ -292,14 +417,122 @@ final class ArrayDbInterfaceTest extends TestCase
 
     public function testConditionGroupingOr()
     {
+        $this->initRepositoryWithData();
+        $result = User::get()
+            ->startGroup()
+            ->_login("Macrow")
+            ->_or()
+            ->_login("Purches")
+            ->endGroup()
+            ->find();
+
+        $this->assertCount(2, $result);
+
+        $this->assertEquals("Macrow",$result[0]->_login());
+        $this->assertEquals("Purches",$result[1]->_login());
+    }
+
+    public function testConditionGroupingTwoOrGroups()
+    {
+        $this->initRepositoryWithData();
+        $result = User::get()
+            ->startGroup()
+            ->_login("Macrow")
+            ->_or()
+            ->_login("Purches")
+            ->endGroup()
+            ->startGroup()
+            ->_name("Claudina Macrow")
+            ->_or()
+            ->_name("xxxx")
+            ->endGroup()
+            ->find();
+
+        $this->assertCount(1, $result);
+
+        $this->assertEquals("Macrow",$result[0]->_login());
+
+    }
+    public function testConditionGroupingOrAndAndinOneGroup()
+    {
+        $this->initRepositoryWithData();
+        $result = User::get()
+            ->startGroup()
+            ->_login("Macrow")
+            ->_name("Claudina Macrow")
+            ->_or()
+            ->_login("Purches")
+            ->endGroup()
+            ->find();
+
+        $this->assertCount(2, $result);
+
+
     }
 
 
     public function testListOrder()
     {
+        $this->initRepositoryWithData();
+
+        $result = User::get()
+            ->order(User::F_AGE)
+            ->order(User::F_LOGIN, Criteria::O_DESC)
+            ->find();
+
+        $lastAge = $result[0]->_age();
+        $lastLogin = $result[0]->_login();
+        foreach ($result as $row) {
+            $this->assertGreaterThanOrEqual($lastAge, $row->_age(), "Dynamic excepted change");
+            if ($lastAge == $row->_age()) {
+                $this->assertTrue(strcmp($lastLogin, $row->_login()) >= 0, "{$lastLogin} !! > {$row->_login()}");
+            }
+
+            $lastLogin = $row->_login();
+            $lastAge = $row->_age();
+
+
+        }
     }
 
+    public function testListLimit()
+    {
+
+        $this->initRepositoryWithData();
+
+        $result = User::get()
+            ->limit(3, 10)
+            ->find();
+
+        $this->assertCount(10, $result);
+
+        $this->assertEquals(4, $result[0]->_id());
+        $this->assertEquals(13, $result[9]->_id());
+
+
+    }
+
+
     public function testListGroup()
+    {
+        $this->initRepositoryWithData();
+
+        $result = User::get()
+            ->limit(3, 10)
+            ->find();
+
+        $this->assertCount(10, $result);
+
+        $this->assertEquals(4, $result[0]->_id());
+        $this->assertEquals(13, $result[9]->_id());
+
+    }
+
+    public function testJoin()
+    {
+    }
+
+    public function testJoinLeft()
     {
     }
 

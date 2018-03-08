@@ -45,6 +45,12 @@ class DataSet implements \Iterator, \ArrayAccess, \Countable, \Serializable, \Js
         }
         $this->simple = $simple;
         $this->criteria = $criteria;
+
+        //20
+
+        //13
+
+
     }
 
     /**
@@ -179,6 +185,10 @@ class DataSet implements \Iterator, \ArrayAccess, \Countable, \Serializable, \Js
         while ($row = $this->fetch($fetchType)) {
         }
         return $this->mappedArray;
+    }
+
+    public function toPureArray( ){
+        return $this->toArray(self::AS_ARRAY);
     }
 
     public function __toString()

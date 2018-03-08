@@ -170,6 +170,7 @@ class DBRepository implements LoggerAwareInterface
 
     public function select(Criteria $criteria, $asSimpleData = false)
     {
+
         $class = $criteria->getModel();
         $res = $this->connectionInterface->select($class::getTable(), $criteria);
 

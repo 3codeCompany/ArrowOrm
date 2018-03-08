@@ -1,17 +1,18 @@
 <?php namespace Arrow\ORM\Persistent;
 
 
-    /**
-     * @author     Pawel Giemza
-     * @version    1.0
-     * @package    Arrow
-     * @subpackage Orm
-     * @link       http://arrowplatform.org/
-     * @copyright  2009 3code
-     * @license    GNU LGPL
-     *
-     * @date 2009-03-06
-     */
+/**
+ * @author     Pawel Giemza
+ * @version    1.0
+ * @package    Arrow
+ * @subpackage Orm
+ * @link       http://arrowplatform.org/
+ * @copyright  2009 3code
+ * @license    GNU LGPL
+ *
+ * @date 2009-03-06
+ */
+
 use Arrow\ORM\DB\DB;
 use Arrow\ORM\Exception;
 
@@ -77,6 +78,8 @@ class Criteria
     private $data = [
         "group",
         "conditions" => [],
+        "order" => [],
+        "limit" => [],
     ];
     /**
      * List of nested groups (AND/OR)
@@ -95,8 +98,6 @@ class Criteria
     protected $mainModel;
     protected $mainModelFields;
     protected $mainModelPKField;
-
-
 
 
     /**
@@ -140,21 +141,21 @@ class Criteria
 
     public function _join($class, array $on, $as = false, $fields = null, $type = self::J_LEFT, $customCondition = false)
     {
-        $as = $as?$as:$class;
-        $fields = $fields?$fields:$class::getFields();
+        $as = $as ? $as : $class;
+        $fields = $fields ? $fields : $class::getFields();
 
         $this->data["joins"][$as] = [
-                "class" => $class,
-                "as" => $as,
-                "on" => $on,
-                "type" => $type,
-                "fields" => $fields,
-                "customCondition" => $customCondition
+            "class" => $class,
+            "as" => $as,
+            "on" => $on,
+            "type" => $type,
+            "fields" => $fields,
+            "customCondition" => $customCondition
         ];
         return $this;
     }
 
-    public function customJoin( $alias, $fields, $queryFragment)
+    public function customJoin($alias, $fields, $queryFragment)
     {
         $this->data["customJoins"][] = [
             "as" => $alias,
@@ -216,7 +217,7 @@ class Criteria
     public function count()
     {
         //todo ładniej obudować
-        if( $this->isAggregated()  || !empty($this->data['group'])){
+        if ($this->isAggregated() || !empty($this->data['group'])) {
             return DB::getDB()->query("SELECT FOUND_ROWS()")->fetchColumn();
         }
 
@@ -236,8 +237,9 @@ class Criteria
         $c->setLimit(0, 1);
         $c->addColumn($field, "tmp", $function);
         $result = PersistentFactory::getByCriteria($c)->fetch();
-        if($result === null)
+        if ($result === null) {
             return 0;
+        }
         return reset($result);
     }
 
@@ -278,8 +280,9 @@ class Criteria
     {
         $class = $this->mainModel;
         $columns = [$field];
-        if($fieldToIndex && $fieldToIndex !== true)
+        if ($fieldToIndex && $fieldToIndex !== true) {
             $columns[] = $fieldToIndex;
+        }
 
         $this->setColumns($columns);
         $result = $this->find();
@@ -288,10 +291,11 @@ class Criteria
         $tmp = array();
         while ($row = $result->fetch()) {
             if ($fieldToIndex) {
-                if ($fieldToIndex === true)
+                if ($fieldToIndex === true) {
                     $tmp[$row->getPKey()] = $row[$field];
-                else
+                } else {
                     $tmp[$row[$fieldToIndex]] = $row[$field];
+                }
             } else {
                 $tmp[] = $row[$field];
             }
@@ -313,12 +317,15 @@ class Criteria
             return $result;
         } else {
             $tmp = array();
-            if($fieldToIndex == null)
-                foreach ($result as $r)
+            if ($fieldToIndex == null) {
+                foreach ($result as $r) {
                     $tmp[$r->getPKey()] = $r;
-            else
-                foreach ($result as $r)
+                }
+            } else {
+                foreach ($result as $r) {
                     $tmp[$r[$fieldToIndex]] = $r;
+                }
+            }
 
             return $tmp;
         }
@@ -352,8 +359,9 @@ class Criteria
     {
         if ($condition == self::END) {
             $this->firstlast = true;
-            $value = NULL;
+            $value = null;
             $this->groups = array_slice($this->groups, 0, count($this->groups) - 1);
+
         }
 
         if (count($this->groups) && $this->firstlast == false) { //_add AND/OR between conditions
@@ -366,13 +374,13 @@ class Criteria
         /*$last = end($this->data['conditions']);
         if( $last && $last["value"] != null )*/
 
-        $this->data['conditions'][] = array(
+        $this->data['conditions'][] = [
             'column' => $column,
             'value' => $value,
             'condition' => $condition,
             'function' => $function,
             'functionData' => $functionData
-        );
+        ];
 
         if ($condition == self::START) {
             $this->firstlast = true;
@@ -413,7 +421,9 @@ class Criteria
     public function addCustomCondition($value, $tables = array())
     {
         if (count($this->groups) && $this->firstlast == false) //_add AND/OR between conditions
-        $this->addConnector(end($this->groups));
+        {
+            $this->addConnector(end($this->groups));
+        }
 
         $this->data['conditions'][] = array('column' => '', 'value' => $value, 'condition' => 'CUSTOM', 'tables' => $tables);
         $this->firstlast = false;
@@ -428,34 +438,37 @@ class Criteria
      * @note By default Criteria includes list of all fields stored in configuration of model with witch it will be used.
      * Call setEmptyList() in order to override this.
      *
-     * @param $column    - name of column to _add/change
-     * @param $alias     - index under which this column will be returned
+     * @param $column - name of column to _add/change
+     * @param $alias - index under which this column will be returned
      * @param $aggregate - aggergete function to be used with this column use one of A_* constant here
      *
      * @return
      */
     public function addColumn($column, $alias = false, $aggregate = false, $custom = false)
     {
-        if (!in_array($column, $this->mainModelFields) ) {
-            if(strpos($column,":") != false || $column[0] == "("){
+        if (!in_array($column, $this->mainModelFields)) {
+            if (strpos($column, ":") != false || $column[0] == "(") {
                 $this->data['columns'][$alias ? $alias : $column] = ['column' => $column, 'alias' => $alias ? $alias : $column, 'aggregate' => $aggregate, "custom" => false];
-            }else{
+            } else {
                 /*
                     jeśli zewnętrzna kontrolka chce dodać kolumnę to trzeba sprawdzić również aliasy już dodane w criteri wczesniej ale
                     nie znajdujące się na liście kolumn, jeśli występuje to nic nie robimy ( bo kolumna już jest dodana ale z zewnątrz przyszedł request aliasu
                     dzieje się tak dlatego że kontrolki mogą nie rozpoznawać czy posługują się aliasem czy faktyczną nazwą kolumny
                 */
-                foreach( $this->data["columns"] as $col )
-                    if($col["alias"] == $column)
+                foreach ($this->data["columns"] as $col) {
+                    if ($col["alias"] == $column) {
                         return $this;
+                    }
+                }
             }
         }
 
-        $this->data['columns'][$alias ? $alias : $column] = ['column' => $column, 'alias' => $alias ? $alias : $column, 'aggregate' => $aggregate, 'custom' => $custom ];
+        $this->data['columns'][$alias ? $alias : $column] = ['column' => $column, 'alias' => $alias ? $alias : $column, 'aggregate' => $aggregate, 'custom' => $custom];
 
 
-        if (!empty($alias))
+        if (!empty($alias)) {
             $this->removeColumn($column);
+        }
 
         if (!empty($aggregate)) {
             $this->aggregates = true;
@@ -463,7 +476,6 @@ class Criteria
 
         return $this;
     }
-
 
 
     /**
@@ -500,15 +512,16 @@ class Criteria
         return $this;
     }
 
-    //---------------------------------------------------------------------------------------------------------	
+    //---------------------------------------------------------------------------------------------------------
     public function addOrderBy($column, $orderType = self::O_ASC, $order_priority = '')
     {
         $orderType = strtoupper($orderType);
-        if(strpos($column,",") !== false){
-            $tmp = explode("," ,$column);
-            foreach($tmp as $column)
+        if (strpos($column, ",") !== false) {
+            $tmp = explode(",", $column);
+            foreach ($tmp as $column) {
                 $this->data['order'][] = array($column, $orderType, $order_priority);
-        }else{
+            }
+        } else {
             $this->data['order'][] = array($column, $orderType, $order_priority);
         }
 
@@ -544,13 +557,8 @@ class Criteria
     //---------------------------------------------------------------------------------------------------------
     public function endGroup()
     {
-        //$this->groups = array_slice($this->groups,0,count($this->groups)-1);
-        //$this->firstlast = true;
-        // przeniesione do addCondition
-        $this->addCondition("", NULL, Criteria::END);
-
+        $this->addCondition("", null, Criteria::END);
         return $this;
-        //\Arrow\Logger::log("[Criteria] Nested group finished",\Arrow\Logger::EL_INFO);
     }
 
 
@@ -587,9 +595,9 @@ class Criteria
     }
 
 
-    /* checks whether condition exists in criteria 
+    /* checks whether condition exists in criteria
      * set $value or $condiiton_type to null to ignore it
-     * 
+     *
      */
 
     /*public function conditionExists($column, $value = null, $condition_type = null)
@@ -617,7 +625,8 @@ class Criteria
         return $this;
     }
 
-    public function stringify(){
+    public function stringify()
+    {
 
         //return print_r($this->data, 1);
         return json_encode($this->data);

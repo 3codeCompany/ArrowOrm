@@ -18,14 +18,18 @@ namespace Arrow\ORM\DB\Connectors;
 use Arrow\ORM\DB\DBInterface;
 use Arrow\ORM\Exception;
 use Arrow\ORM\Persistent\Criteria;
-use Arrow\ORM\Persistent\JoinCriteria;
 use Arrow\ORM\Schema\AbstractSynchronizer;
-use Monolog\Handler\StreamHandler;
-use Monolog\Logger;
-use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
-use function substr;
-use function var_dump;
+use const PHP_EOL;
+use const SORT_DESC;
+use function addslashes;
+use function array_pop;
+use function array_slice;
+use function debug_backtrace;
+use function in_array;
+use function is_numeric;
+use function preg_match;
+use function str_replace;
 
 /**
  * Generates MySQL satement using ORM objects
@@ -46,6 +50,7 @@ class ArrayDBInterface implements DBInterface
     {
         $this->logger = $logger;
     }
+
 
     public function __construct($connection)
     {
@@ -75,9 +80,23 @@ class ArrayDBInterface implements DBInterface
      *
      * @return Array
      */
-    public function select($table, $criteria)
+    public function select($table, Criteria $criteria)
     {
-        return $this->dbArray[$table];
+        $matched = [];
+
+        $criteriaData = $criteria->getData();
+
+        //print_r($criteriaData['conditions']);
+        foreach ($this->dbArray[$table] as $key => $row) {
+            if ($this->passingConditions($criteriaData['conditions'], $row)) {
+                $matched[] = $this->dbArray[$table][$key];
+            }
+        }
+
+        $this->applyListOrder($criteriaData["order"], $matched);
+        $this->applyLimit($criteriaData["limit"], $matched);
+
+        return $matched;
     }
 
     /**
@@ -150,14 +169,89 @@ class ArrayDBInterface implements DBInterface
     }
 
 
+    private function applyLimit($limit, &$set)
+    {
+        if ($limit) {
+            $set = array_slice($set, $limit[0], $limit[1]);
+        }
+    }
+
+    private function applyListOrder($order, &$set)
+    {
+
+        if (empty($order)) {
+            return $set;
+        }
+
+        $arguments = [];
+        $ordersTmp = [];
+        foreach ($order as $entryKey => $orderEntry) {
+            foreach ($set as $key => $row) {
+                $ordersTmp[$entryKey][$key] = $row[$orderEntry[0]];
+            }
+            $arguments[] = $ordersTmp[$entryKey];
+            $arguments[] = $orderEntry[1] == "ASC" ? SORT_ASC : SORT_DESC;
+
+        }
+
+        $arguments[] = &$set;
+        array_multisort(...$arguments);
+
+    }
+
     private function passingConditions($conditions, $row)
     {
+
+        $conditionsStack = [
+            true
+        ];
+        $operatorsStack = [
+            "AND"
+        ];
+
         foreach ($conditions as $condition) {
-            if (!$this->passingCondition($condition, $row)) {
-                return false;
+            if ($condition == "OR" || $condition == "AND") {
+                //changing current condition
+                $c = count($operatorsStack) - 1;
+                $operatorsStack[$c] = $condition;
+            } else {
+                $condExpression = $condition["condition"];
+
+                if ($condExpression == Criteria::START) {
+                    //adding new group on stack
+                    $conditionsStack[] = true;
+                    $operatorsStack[] = "AND";
+                } elseif ($condExpression == Criteria::END) {
+                    //removing group from stack - removing current condition ( its no longer valid )
+                    array_pop($operatorsStack);
+                    //taking result of group validation
+                    $closedValue = array_pop($conditionsStack);
+                    $c = count($conditionsStack) - 1;
+                    //summing group result with last result
+                    if (end($operatorsStack) == "AND") {
+                        $conditionsStack[$c] = $conditionsStack[$c] && $closedValue;
+                    } else {
+                        $conditionsStack[$c] = $conditionsStack[$c] || $closedValue;
+                    }
+                } elseif ($condExpression == Criteria::C_AND_GROUP) {
+                    throw new Exception("Not implemented");
+                } elseif ($condExpression == Criteria::C_OR_GROUP) {
+                    throw new Exception("Not implemented");
+                } else {
+                    //summing result with currently valid result on stack
+                    $c = count($conditionsStack) - 1;
+                    if (end($operatorsStack) == "AND") {
+                        $conditionsStack[$c] = $conditionsStack[$c] && $this->passingCondition($condition, $row);
+                    } else {
+                        $conditionsStack[$c] = $conditionsStack[$c] || $this->passingCondition($condition, $row);
+                    }
+                }
             }
+
         }
-        return true;
+
+
+        return $conditionsStack[0];
     }
 
     private function passingCondition($condition, $row)
@@ -166,17 +260,51 @@ class ArrayDBInterface implements DBInterface
         $condValue = $condition["value"];
         $rowValue = $row[$condition["column"]];
 
-
+        //TODO enable strong type check
         switch ($condExpression) {
             case Criteria::C_EQUAL:
                 if ($condValue === "null") {
                     return is_null($rowValue);
                 } else {
-                    return $rowValue === $condValue;
+                    return $rowValue == $condValue;
                 }
                 break;
+            case Criteria::C_GREATER_EQUAL:
+                return $rowValue >= $condValue;
+                break;
+            case Criteria::C_GREATER_THAN:
+                return $rowValue > $condValue;
+                break;
+            case Criteria::C_LESS_EQUAL:
+                return $rowValue <= $condValue;
+                break;
+            case Criteria::C_LESS_THAN:
+                return $rowValue < $condValue;
+                break;
+            case Criteria::C_IN:
+                return in_array($rowValue, $condValue);
+                break;
+            case Criteria::C_NOT_IN:
+                return !in_array($rowValue, $condValue);
+                break;
+            case Criteria::C_BETWEEN:
+                if (is_numeric($rowValue)) {
+                    return ($rowValue > $condValue[0] && $rowValue < $condValue[1]);
+                } else {
+                    return (strcmp($rowValue, $condValue[0]) > 0 && strcmp($rowValue, $condValue[1]) < 0);
+                }
+                break;
+            case Criteria::C_LIKE:
+                $pattern = "/" . str_replace(["_", "%"], [".{1}", ".*?"], addslashes($condValue)) . "/ms";
+                return preg_match($pattern, $rowValue);
+                break;
+            case Criteria::C_NOT_LIKE:
+                $pattern = "/" . str_replace(["_", "%"], [".{1}", ".*?"], addslashes($condValue)) . "/ms";
+                return !preg_match($pattern, $rowValue);
+                break;
+
             default:
-                throw new exception("not implemented");
+                throw new exception("not implemented contidtion: {$condExpression}");
         }
 
     }
@@ -304,3 +432,46 @@ class ArrayDBInterface implements DBInterface
     }
 
 }
+
+function getCalled($depth = 3)
+{
+    $trace = debug_backtrace();
+    for ($i = 0; $i < $depth; $i++) {
+        if (!isset($trace[1 + $i]) || !isset($trace[1 + $i]["file"])) {
+            break;
+        }
+        $t = $trace[1 + $i];
+        print $t["file"] . ":" . $t["line"] . " (" . "" . ")" . PHP_EOL;
+    }
+
+    print PHP_EOL . PHP_EOL;
+
+}
+
+function table($data)
+{
+
+    // Find longest string in each column
+    $columns = [];
+    foreach ($data as $row_key => $row) {
+        foreach ($row as $cell_key => $cell) {
+            $length = strlen($cell);
+            if (empty($columns[$cell_key]) || $columns[$cell_key] < $length) {
+                $columns[$cell_key] = $length;
+            }
+        }
+    }
+
+    // Output table, padding columns
+    $table = '';
+    foreach ($data as $row_key => $row) {
+        foreach ($row as $cell_key => $cell) {
+            $table .= str_pad($cell, $columns[$cell_key]) . '   ';
+        }
+        $table .= PHP_EOL;
+    }
+    return $table;
+
+}
+
+

@@ -5,6 +5,7 @@
         <field name="created" type="DATETIME"/>
         <field name="active" type="INTEGER" size="1"/>
         <field name="login" type="VARCHAR" size="255"/>
+        <field name="password" type="VARCHAR" size="64"/>
         <field name="name" type="VARCHAR" size="255"/>
         <field name="email" type="VARCHAR" size="255"/>
         <field name="phone" type="VARCHAR" size="255"/>
