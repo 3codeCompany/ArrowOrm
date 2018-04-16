@@ -96,7 +96,11 @@ class PersistentFactory
             $data = $object->getData();
             foreach ($object::getRequiredFields() as $field) {
                 if (!array_key_exists($field, $data)) {
-                    throw new Exception(array('msg' => '[ArrowOrmPersistent] Required value ' . $field . ' not deliverd to create function.', "values" => $data));
+                    //throw new \Exception(array('msg' => '[ArrowOrmPersistent] Required value ' . $field . ' not deliverd to create function.', "values" => $data));
+                    print "<pre>";
+                    print_r(array('msg' => '[ArrowOrmPersistent] Required value ' . $field . ' not deliverd to create function.', "values" => $data));
+                    exit();
+
                 }
             }
             //create action

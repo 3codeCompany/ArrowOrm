@@ -171,7 +171,7 @@ class MysqlSynchronizer extends AbstractSynchronizer
                             $mismatch->parentElement->deleteField($mismatch->element);
                         } else {
                             $toRemove = "Field: {$mismatch->parentElement}.{$mismatch->element}";
-                            throw new Exception("Remove prevention is on, cant remove $toRemove");
+                            print("Remove prevention is on, cant remove $toRemove\n");
                         }
                     }
                 }
@@ -200,8 +200,8 @@ class MysqlSynchronizer extends AbstractSynchronizer
                     if (!$this->isPreventRemoveActions()) {
                         $sql = $this->deleteTable($mismatch->element);
                     } else {
-                        $toRemove = "Table: {$mismatch->element->getName()}";
-                        throw new Exception("Remove prevention is on, cant remove $toRemove");
+                        $toRemove = "Table: {$mismatch->element}";
+                        print("Remove prevention is on, cant remove $toRemove\n");
                     }
                 } elseif ($mode == self::MODE_DS_TO_SCHEMA || $mode == self::MODE_ALL) {
                     $table = $this->createTableFromDs($mismatch->element);
@@ -215,7 +215,7 @@ class MysqlSynchronizer extends AbstractSynchronizer
                         $sql = $this->deleteField($mismatch->parentElement, $mismatch->element);
                     } else {
                         $toRemove = "Field: {$mismatch->parentElement}.{$mismatch->element}";
-                        throw new Exception("Remove prevention is on, cant remove $toRemove");
+                        print("Remove prevention is on, cant remove $toRemove\n");
                     }
                 } elseif ($mode == self::MODE_DS_TO_SCHEMA || $mode == self::MODE_ALL) {
                     $field = $this->createFieldFromDs($mismatch->parentElement, $mismatch->element);
