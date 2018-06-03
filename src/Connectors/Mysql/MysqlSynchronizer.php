@@ -1,5 +1,5 @@
 <?php
-namespace Arrow\ORM\Connectors\Synchronizers;
+namespace Arrow\ORM\Connectors\Mysql;
 
 use Arrow\ORM\Exception;
 use Arrow\ORM\Schema\AbstractMismatch;

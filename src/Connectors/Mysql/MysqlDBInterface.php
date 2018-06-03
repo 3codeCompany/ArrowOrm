@@ -1,6 +1,6 @@
 <?php
 
-namespace Arrow\ORM\Connectors;
+namespace Arrow\ORM\Connectors\Mysql;
 
 /**
  * @author     Pawel Giemza

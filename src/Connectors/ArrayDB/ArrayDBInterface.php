@@ -1,6 +1,6 @@
 <?php
 
-namespace Arrow\ORM\DB\Connectors;
+namespace Arrow\ORM\DB\Connectors\ArrayDB;
 
 
 /**
