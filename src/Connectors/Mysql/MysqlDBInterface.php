@@ -15,6 +15,7 @@ namespace Arrow\ORM\Connectors\Mysql;
  */
 use ADebug;
 use Arrow\ORM\DB\DBInterface;
+use Arrow\ORM\Exception;
 use Arrow\ORM\Persistent\Criteria;
 use Arrow\ORM\Persistent\JoinCriteria;
 use Arrow\ORM\Schema\AbstractSynchronizer;
@@ -97,7 +98,7 @@ class MysqlDBInterface implements DBInterface
                 $on = implode(" and ", $tmp);
 
 
-                $joins .= "\n " . ($j["type"] == JoinCriteria::J_OUTER ? '' : $j["type"]) . " JOIN `" . $j["class"]::getTable() . "` as `" . $j["as"] . "` ON ( " . $on . " " . $j["customCondition"] . " )";
+                $joins .= "\n " . ($j["type"] == Criteria::J_OUTER ? '' : $j["type"]) . " JOIN `" . $j["class"]::getTable() . "` as `" . $j["as"] . "` ON ( " . $on . " " . $j["customCondition"] . " )";
             }
 
         }
@@ -106,12 +107,14 @@ class MysqlDBInterface implements DBInterface
                 $joins .= "\n" . $j["queryFragment"];
             }
         }
-        /*        if($table == "shop_allegro_auctions") {
-                    $q = "SELECT " . ($criteria->isAggregated() ? 'SQL_CALC_FOUND_ROWS ' : '') . $this->columnsToSQL($criteria) . " FROM $table $joins\n WHERE " . $this->conditionsToSQL($criteria) . $this->groupsToSQL($table, $criteria);
-                    \ADebug::log($q);
-                }*/
 
-        $q = "SELECT " . ($criteria->isAggregated() ? 'SQL_CALC_FOUND_ROWS ' : '') . $this->columnsToSQL($criteria) . " FROM $table $joins\n WHERE " . $this->conditionsToSQL($criteria) . $this->groupsToSQL($table, $criteria);
+        $q =
+            "SELECT " . ($criteria->isAggregated() ? 'SQL_CALC_FOUND_ROWS ' : '') . $this->columnsToSQL($criteria) .
+            "\nFROM $table $joins" .
+            "\nWHERE " . $this->conditionsToSQL($criteria) .
+            "\n" . $this->groupsToSQL($table, $criteria) .
+            "\n" . $this->orderToSql($table, $criteria) .
+            "\n" . $this->limitToSql($criteria);
         return $this->connection->query($q);
 
     }
@@ -268,7 +271,9 @@ class MysqlDBInterface implements DBInterface
         //$aliases
         $table = false;
         $model = $criteria->getModel();
-        $table = $model::getTable();
+        if ($model) {
+            $table = $model::getTable();
+        }
 
 
         $criteriaData = $criteria->getData();
@@ -304,15 +309,17 @@ class MysqlDBInterface implements DBInterface
                             $column = $aliases[$table]["alias"] . '.' . $column;
                         } else {
                             if (strpos($column, ":") == false) {
-                                $column = "{$model::getTable()}.{$column}";
+                                $column = "{$table}.{$column}";
                             } else {
                                 $tmp = explode(":", $column);
                                 $column = $tmp[0] . "`" . ".`" . $tmp[1];
                             }
                         }
                     } else {
-                        if (strpos($column, ":") == false) {
-                            $column = "{$model::getTable()}.{$column}";
+
+                        if (!$table) {
+                        } else if (strpos($column, ":") == false) {
+                            $column = "{$table}.{$column}";
                         } else {
                             $tmp = explode(":", $column);
                             $column = $tmp[0] . "`" . ".`" . $tmp[1];
@@ -459,6 +466,7 @@ class MysqlDBInterface implements DBInterface
         return $conditionString;
     }
 
+
     public function columnsToSQL($criterias, $aliases = false)
     {
 
@@ -536,128 +544,160 @@ class MysqlDBInterface implements DBInterface
         return " \n\t" . $columns . "\n";
     }
 
-    public function groupsToSQL($tableName, $criterias, $aliases = false)
+    public function groupsToSQL($tableName, $criteria, $aliases = false)
     {
         // table alliases -  array of tables whose columns have to added under special aliases (ad also many times)
         $groupBy = '';
-        $orderBy = ''; //zmiana z powodu prorytetów w joincriterii
-        $limitBy = '';
 
-        if (!($criterias instanceof JoinCriteria)) {
-            $criterias = array($criterias);
+        $group_empty = false;
+        $criteriaData = $criteria->getData();
+        $className = $criteria->getModel();
+
+        if ($aliases && isset($aliases[$tableName])) {
+
+            if (strpos($className, ':') !== false) {
+                $className = explode('[', $className);
+                $className = end($className);
+                $className = str_replace(array('::', ']'), array('_', ''), $className);
+            }
+            if (isset($aliases[$tableName][$className])) {
+                $tableName = $aliases[$tableName][$className];
+            } else {
+                $tableName = $aliases[$tableName]["alias"];
+            }
         }
 
-        foreach ($criterias as $criteria) {
+        if ($criteria->isGroupBy()) {
+            if (empty($groupBy)) {
+                $groupBy = "\n GROUP BY \n\t";
+                $group_empty = true;
+            }
+            $tmp = array();
+            foreach ($criteriaData['group'] as $group) {
 
-            $group_empty = false;
-            $criteriaData = $criteria->getData();
-            $className = $criteria->getModel();
-
-            if ($aliases && isset($aliases[$tableName])) {
-
-                if (strpos($className, ':') !== false) {
-                    $className = explode('[', $className);
-                    $className = end($className);
-                    $className = str_replace(array('::', ']'), array('_', ''), $className);
-                }
-                if (isset($aliases[$tableName][$className])) {
-                    $tableName = $aliases[$tableName][$className];
+                if (strpos($group, "raw:") === 0) {
+                    $tmp[] = substr($group, 4);
+                } elseif ($group[0] == "'") {
+                    $tmp[] = "'" . trim($group, "'") . "'";
                 } else {
-                    $tableName = $aliases[$tableName]["alias"];
-                }
-            }
-
-            if ($criteria->isGroupBy()) {
-                if (empty($groupBy)) {
-                    $groupBy = "\n GROUP BY \n\t";
-                    $group_empty = true;
-                }
-                $tmp = array();
-                foreach ($criteriaData['group'] as $group) {
-
-                    if (strpos($group, "raw:") === 0) {
-                        $tmp[] = substr($group, 4);
-                    } elseif ($group[0] == "'") {
-                        $tmp[] = "'" . trim($group, "'") . "'";
+                    if (strpos($group, ":") == false) {
+                        $tmp[] = "{$tableName}.{$group}";
                     } else {
-                        if (strpos($group, ":") == false) {
-                            $tmp[] = "{$tableName}.{$group}";
-                        } else {
-                            $_tmp = explode(":", $group);
-                            $tmp[] = "`" . $_tmp[0] . "`" . ".`" . $_tmp[1] . "`";
-                        }
+                        $_tmp = explode(":", $group);
+                        $tmp[] = "`" . $_tmp[0] . "`" . ".`" . $_tmp[1] . "`";
                     }
                 }
-                if (!$group_empty) {
-                    $groupBy .= ", ";
-                }
-                $groupBy .= implode(", \n\t", $tmp);
             }
-
-            if (isset($criteriaData['order']) && !empty($criteriaData['order'])) {
-                $ord = array();
-
-                foreach ($criteriaData['order'] as $order) {
-                    $tmp = '';
-                    if ($order[0] == "RAND()" || $order[0] == "RAND") {
-                        $tmp = "RAND()";
-                    } else {
-                        if ($order[0][0] == "'") {
-                            $tmp = trim($order[0], "'");
-
-                        } elseif (strpos($order[0], "raw:") === 0) {
-                            $tmp = $this->connection->quote(substr($order[0], 4));
-                        } else {
-
-                            if (strpos($order[0], ":") == false) {
-                                $alias = false;
-                                //sprawdzanie czy nie sortujemy wg aliasu
-                                foreach ($criteriaData['columns'] as $col) {
-                                    if ($col["alias"] == $order[0]) {
-                                        $tmp = "`{$order[0]}`";
-                                        $alias = true;
-                                    }
-                                }
-                                if (!$alias) {
-                                    $tmp = "{$tableName}.{$order[0]}";
-                                }
-                            } else {
-                                $_tmp = explode(":", $order[0]);
-                                $tmp = "`" . $_tmp[0] . "`" . ".`" . $_tmp[1] . "`";
-                            }
-                        }
-
-                        $tmp .= " " . $order[1];
-
-                    }
-
-                    if (!isset($order[2]) || $order[2] === '') {
-                        $ord[] = $tmp;
-
-                        //to może psuć w przypadku kiedy będą łaczone riorytety i niepriorytety (ale to nie powinno sie nigdy zdażyc)
-                    } else {
-
-                        $ord[$order[2]] = $tmp;
-                    }
-                }
-                if (!empty($ord)) {
-                    ksort($ord);
-                    $orderBy = implode(", \n\t", $ord);
-                    $orderBy = "\n ORDER BY \n\t" . $orderBy;
-                }
+            if (!$group_empty) {
+                $groupBy .= ", ";
             }
-            if (isset($criteriaData['limit']) && !empty($criteriaData['limit'])) {
-                $limitBy .= "\n LIMIT {$criteriaData['limit'][0]}, {$criteriaData['limit'][1]}";
-            }
+            $groupBy .= implode(", \n\t", $tmp);
         }
 
 
-        return $groupBy . $orderBy . $limitBy;
+        return $groupBy;
+    }
+
+    private function orderToSql($tableName, Criteria $criteria)
+    {
+        $criteriaData = $criteria->getData();
+        $orderBy = '';
+        if (isset($criteriaData['order']) && !empty($criteriaData['order'])) {
+            $ord = array();
+
+            foreach ($criteriaData['order'] as $order) {
+                $tmp = '';
+                if ($order[0] == "RAND()" || $order[0] == "RAND") {
+                    $tmp = "RAND()";
+                } else {
+                    if ($order[0][0] == "'") {
+                        $tmp = trim($order[0], "'");
+
+                    } elseif (strpos($order[0], "raw:") === 0) {
+                        $tmp = $this->connection->quote(substr($order[0], 4));
+                    } else {
+
+                        if (strpos($order[0], ":") == false) {
+                            $alias = false;
+                            //sprawdzanie czy nie sortujemy wg aliasu
+                            foreach ($criteriaData['columns'] as $col) {
+                                if ($col["alias"] == $order[0]) {
+                                    $tmp = "`{$order[0]}`";
+                                    $alias = true;
+                                }
+                            }
+                            if (!$alias) {
+                                $tmp = "{$tableName}.{$order[0]}";
+                            }
+                        } else {
+                            $_tmp = explode(":", $order[0]);
+                            $tmp = "`" . $_tmp[0] . "`" . ".`" . $_tmp[1] . "`";
+                        }
+                    }
+
+                    $tmp .= " " . $order[1];
+
+                }
+
+                if (!isset($order[2]) || $order[2] === '') {
+                    $ord[] = $tmp;
+
+                    //to może psuć w przypadku kiedy będą łaczone riorytety i niepriorytety (ale to nie powinno sie nigdy zdażyc)
+                } else {
+
+                    $ord[$order[2]] = $tmp;
+                }
+            }
+            if (!empty($ord)) {
+                ksort($ord);
+                $orderBy = implode(", \n\t", $ord);
+                $orderBy = "\n ORDER BY \n\t" . $orderBy;
+            }
+        }
+
+        return $orderBy;
+    }
+
+    private function limitToSql(Criteria $criteria)
+    {
+        $criteriaData = $criteria->getData();
+        if (isset($criteriaData['limit']) && !empty($criteriaData['limit'])) {
+            return "\n LIMIT {$criteriaData['limit'][0]}, {$criteriaData['limit'][1]}";
+        } else {
+            return "";
+        }
     }
 
     public function getSynchronizer(): AbstractSynchronizer
     {
         return new MysqlSynchronizer($this->connection);
+    }
+
+    public function applyCriteriaToQuery($query, Criteria $criteria): string
+    {
+        /*print_r($query);
+
+        print_r($criteria);*/
+        $criteriaData = $criteria->getData();
+        //print_r($criteriaData["columns"]);
+
+        unset($criteriaData["columns"][""]);
+        $columns = implode(",", array_keys($criteriaData["columns"]));
+        $query = str_replace("{columns}", $columns, $query);
+        $query = str_replace("{conditions}", $this->conditionsToSQL($criteria), $query);
+        $orderSql = str_replace("ORDER BY", "", $this->orderToSql("", $criteria));
+        if (empty($orderSql)) {
+            $orderSql = 1;
+        }
+
+        $query = str_replace("{order}", $orderSql, $query);
+        $query = str_replace("{limit}", $this->limitToSql($criteria), $query);
+
+        /*{conditions}
+        {order} {limit}*/
+
+
+        return $query;
     }
 
 

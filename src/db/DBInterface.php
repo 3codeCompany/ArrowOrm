@@ -27,4 +27,6 @@ interface DBInterface extends LoggerAwareInterface
 
     public function getSynchronizer(): AbstractSynchronizer;
 
+    public function applyCriteriaToQuery($query, Criteria $criteria);
+
 }

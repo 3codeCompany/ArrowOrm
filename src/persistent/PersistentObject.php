@@ -453,57 +453,6 @@ class PersistentObject extends BaseTracker implements \ArrayAccess, \JsonSeriali
         return $this;
     }
 
-    public function setJoinedData($joinedData)
-    {
-        $this->joinedData = $joinedData;
-    }
-
-    public function getJoinedData()
-    {
-        return $this->joinedData;
-    }
-
-    public function getJoinedAsObject($class)
-    {
-        if ($this->joinedDataMode == JoinedDataSet::MODE_FLATTEN) {
-            $source = array($this->joinedData);
-        } else {
-            $source = $this->joinedData;
-        }
-
-        $result = array();
-
-        foreach ($source as $row) {
-            $data = array();
-            foreach ($row as $key => $value) {
-                if (strpos($key, $class . ":") === 0) {
-                    $_key = str_replace($class . ":", "", $key);
-                    $data[$_key] = $value;
-                }
-            }
-            if (empty($data)) {
-                $object = null;
-            } else {
-                $object = new $class(array());
-                $object->fastDataLoad($data);
-            }
-            $result[] = $object;
-        }
-
-
-        return $this->joinedDataMode == JoinedDataSet::MODE_FLATTEN ? $result[0] : $result;
-    }
-
-    public function setJoinedDataMode($joinedDataMode)
-    {
-        $this->joinedDataMode = $joinedDataMode;
-    }
-
-    public function getJoinedDataMode()
-    {
-
-        return $this->joinedDataMode;
-    }
 
     /**
      * Specify data which should be serialized to JSON

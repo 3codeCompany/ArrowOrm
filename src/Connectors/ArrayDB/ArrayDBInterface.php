@@ -425,6 +425,11 @@ class ArrayDBInterface implements DBInterface
 
     }
 
+    public function applyCriteriaToQuery($query, $criteria)
+    {
+        throw new Exception("ArrayDB  can't apply criteria to query");
+    }
+
 
     public function getSynchronizer(): AbstractSynchronizer
     {

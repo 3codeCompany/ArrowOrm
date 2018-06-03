@@ -14,6 +14,7 @@
  */
 
 use Arrow\ORM\DB\DB;
+use Arrow\ORM\DB\DBManager;
 use Arrow\ORM\Exception;
 
 /**
@@ -96,7 +97,7 @@ class Criteria
     protected $firstlast = true;
     protected $aggregates = false;
     protected $mainModel;
-    protected $mainModelFields;
+    protected $mainModelFields = [];
     protected $mainModelPKField;
 
 
@@ -108,14 +109,16 @@ class Criteria
      *
      * @return
      */
-    public function __construct($model)
+    public function __construct($model = null)
     {
-        $this->mainModel = $model;
-        $this->mainModelFields = $model::getFields();
-        $this->mainModelPKField = $model::getPKField();
+        if ($model !== null) {
+            $this->mainModel = $model;
+            $this->mainModelFields = $model::getFields();
+            $this->mainModelPKField = $model::getPKField();
 
-        foreach ($this->mainModelFields as $field) {
-            $this->data['columns'][$field] = ['column' => $field, 'alias' => $field, 'aggregate' => false, 'custom' => false];
+            foreach ($this->mainModelFields as $field) {
+                $this->data['columns'][$field] = ['column' => $field, 'alias' => $field, 'aggregate' => false, 'custom' => false];
+            }
         }
 
     }
@@ -631,6 +634,11 @@ class Criteria
         //return print_r($this->data, 1);
         return json_encode($this->data);
         //return "criteria string";
+    }
+
+    public function applyToQuery(string $query): string
+    {
+        return DBManager::getDefaultRepository()->getConnectionInterface()->applyCriteriaToQuery($query, $this);
     }
 
 }
