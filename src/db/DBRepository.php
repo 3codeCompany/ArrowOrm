@@ -18,6 +18,7 @@ use Arrow\ORM\Persistent\PersistentObject;
 use Arrow\ORM\Schema\BaseDomainClassGenerator;
 use Arrow\ORM\Schema\ISchemaTransformer;
 use Arrow\ORM\Schema\Schema;
+use Arrow\ORM\Schema\SchemaReader;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
@@ -225,7 +226,9 @@ class DBRepository implements LoggerAwareInterface
 
     public function synchronize()
     {
-        $schema = ($this->getConfigCallback)();
+        $schemaFiles = ($this->getConfigCallback)();
+        $schema = (new SchemaReader())->readSchemaFromFile($schemaFiles);
+
 
         $this->generateBaseModels($schema);
         foreach ($this->transformers as $generator) {

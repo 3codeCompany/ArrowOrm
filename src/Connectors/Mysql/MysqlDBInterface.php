@@ -65,7 +65,7 @@ class MysqlDBInterface implements DBInterface
      *
      * @return Array
      */
-    public function select($table, $criteria)
+    public function select(string $table, Criteria $criteria)
     {
         $data = $criteria->getData();
         $joins = "";
@@ -127,7 +127,7 @@ class MysqlDBInterface implements DBInterface
      *
      * @return int (id of object inserted into table)
      */
-    public function insert($table, $data, $pKeyField): string
+    public function insert(string $table, array $data, string $pKeyField): string
     {
         $query = "";
         if (empty($data)) {
@@ -169,7 +169,7 @@ class MysqlDBInterface implements DBInterface
      *
      * @return String
      */
-    public function update($table, array $data, $criteria)
+    public function update(string $table, array $data, Criteria $criteria)
     {
 
 
@@ -204,7 +204,7 @@ class MysqlDBInterface implements DBInterface
      * @param String $table
      * @param Criteria $criteria
      */
-    public function delete($table, $criteria)
+    public function delete(string $table, Criteria $criteria)
     {
         $query = "DELETE FROM $table WHERE " . $this->conditionsToSQL($criteria);
         return $this->connection->exec($query);
