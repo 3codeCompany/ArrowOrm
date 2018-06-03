@@ -19,6 +19,7 @@ use Arrow\ORM\DB\DBInterface;
 use Arrow\ORM\Persistent\Criteria;
 use Arrow\ORM\Persistent\JoinCriteria;
 use Arrow\ORM\Schema\AbstractSynchronizer;
+use Psr\Log\LoggerInterface;
 use function substr;
 use function var_dump;
 
@@ -35,13 +36,26 @@ class MysqlDBInterface implements DBInterface
      */
     private $connection;
 
-    /**
-     * @param \PDO $connection
-     */
-    public function setConnection(\PDO $connection)
+
+    public function __construct($connection)
     {
         $this->connection = $connection;
     }
+
+    public function setLogger(LoggerInterface $logger)
+    {
+        $this->logger = $logger;
+    }
+
+    /**
+     * @return array
+     */
+    public function getDB()
+    {
+        //$this->logger && $this->logger->info("Pobieram", $this->dbArray);
+        return $this->connection;
+    }
+
 
     /**
      * Returns rows
@@ -111,7 +125,7 @@ class MysqlDBInterface implements DBInterface
      *
      * @return int (id of object inserted into table)
      */
-    public function insert($table, $data): string
+    public function insert($table, $data, $pKeyField): string
     {
         $query = "";
         if (empty($data)) {
