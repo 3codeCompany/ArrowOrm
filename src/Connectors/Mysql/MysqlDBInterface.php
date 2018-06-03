@@ -14,7 +14,6 @@ namespace Arrow\ORM\Connectors\Mysql;
  * @date 2009-03-06
  */
 use ADebug;
-use Arrow\ORM\Connectors\Synchronizers\MysqlSynchronizer;
 use Arrow\ORM\DB\DBInterface;
 use Arrow\ORM\Persistent\Criteria;
 use Arrow\ORM\Persistent\JoinCriteria;
