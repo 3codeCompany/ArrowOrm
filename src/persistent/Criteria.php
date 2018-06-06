@@ -15,6 +15,7 @@
 
 use Arrow\ORM\DB\DB;
 use Arrow\ORM\DB\DBManager;
+use Arrow\ORM\DB\DBRepository;
 use Arrow\ORM\Exception;
 
 /**
@@ -221,7 +222,7 @@ class Criteria
     {
         //todo ładniej obudować
         if ($this->isAggregated() || !empty($this->data['group'])) {
-            return DB::getDB()->query("SELECT FOUND_ROWS()")->fetchColumn();
+            return DBManager::getDefaultRepository()->getConnectionInterface()->getDB()->query("SELECT FOUND_ROWS()")->fetchColumn();
         }
 
         return $this->getOneValue("id", "count");
