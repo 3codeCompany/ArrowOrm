@@ -392,10 +392,22 @@ class DataSet implements \Iterator, \ArrayAccess, \Countable, \Serializable, \Js
     }
 
 
+
+
     public function delete()
     {
-        foreach ($this as $el)
+        foreach ($this as $el) {
             $el->delete();
+        }
+    }
+
+
+    public function map(callable  $callback){
+        $tmp = [];
+        foreach ($this as $el) {
+            $tmp[] = $callback($el);
+        }
+        return $tmp;
     }
 
     /**
