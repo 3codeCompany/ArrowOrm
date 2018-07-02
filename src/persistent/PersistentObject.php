@@ -37,12 +37,21 @@ class PersistentObject extends BaseTracker implements \ArrayAccess, \JsonSeriali
      */
     public function __construct($data = null, $parameters = null)
     {
+        $this->registerVirtualFields();
+
         if ($data !== null) {
             $this->setValues($data);
         }
         if ($parameters !== null) {
             $this->setParameters($parameters);
         }
+
+
+    }
+
+
+    protected function registerVirtualFields(){
+
     }
 
     /**
@@ -130,6 +139,11 @@ class PersistentObject extends BaseTracker implements \ArrayAccess, \JsonSeriali
     {
         if (!array_key_exists($field, $this->data)) {
             if (!in_array($field, static::$fields)) {
+
+                if (isset($this->virtualFields[$field])) {
+                    return $this->virtualFields[$field]["getter"]($field, $this);
+                }
+
                 if ($this->joinedDataMode == JoinedDataSet::MODE_FLATTEN) {
                     if (strpos($field, ":") !== false) {
                         foreach ($this->joinedData as $key => $val) {
@@ -187,7 +201,7 @@ class PersistentObject extends BaseTracker implements \ArrayAccess, \JsonSeriali
 
         if (!in_array($field, static::$fields) && $strict == true) {
             if (isset($this->virtualFields[$field])) {
-                $this->virtualFields[$field]["setter"]($value);
+                $this->virtualFields[$field]["setter"]($field, $value, $this);
                 return;
             }
             throw new Exception(array("msg" => "[PersistentObject] Field not exists " . static::$class . "['{$field}']", "class" => get_class($this), "field" => $field));
