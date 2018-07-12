@@ -159,15 +159,6 @@ class Criteria
         return $this;
     }
 
-    public function customJoin($alias, $fields, $queryFragment)
-    {
-        $this->data["customJoins"][] = [
-            "as" => $alias,
-            "fields" => $fields,
-            "queryFragment" => $queryFragment
-        ];
-        return $this;
-    }
 
     /**
      *
