@@ -50,7 +50,8 @@ class PersistentObject extends BaseTracker implements \ArrayAccess, \JsonSeriali
     }
 
 
-    protected function registerVirtualFields(){
+    protected function registerVirtualFields()
+    {
 
     }
 
@@ -186,6 +187,21 @@ class PersistentObject extends BaseTracker implements \ArrayAccess, \JsonSeriali
         return $this->changedData;
     }
 
+    public function getChangedLog()
+    {
+        $prev = $this->changedData;
+        $keys = array_keys($prev);
+
+        $next = [];
+        foreach ($keys as $key) {
+            $next[$key] = $this->getValue($key);
+        }
+        return [
+            "from" => $prev,
+            "to" => $next,
+        ];
+    }
+
     public function getData()
     {
         return $this->data;
@@ -201,7 +217,15 @@ class PersistentObject extends BaseTracker implements \ArrayAccess, \JsonSeriali
 
         if (!in_array($field, static::$fields) && $strict == true) {
             if (isset($this->virtualFields[$field])) {
+
+                $prevValue = $this->virtualFields[$field]["getter"]($field, $this);
                 $this->virtualFields[$field]["setter"]($field, $value, $this);
+                $nextValue = $this->virtualFields[$field]["getter"]($field, $this);
+
+                if ($prevValue != $nextValue) {
+                    $this->changedData[$field] = $prevValue;
+                    $this->modified = true;
+                }
                 return;
             }
             throw new Exception(array("msg" => "[PersistentObject] Field not exists " . static::$class . "['{$field}']", "class" => get_class($this), "field" => $field));

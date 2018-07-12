@@ -13,6 +13,7 @@ namespace Arrow\ORM\Connectors\Mysql;
  *
  * @date 2009-03-06
  */
+
 use ADebug;
 use Arrow\ORM\DB\DBInterface;
 use Arrow\ORM\Exception;
@@ -467,80 +468,54 @@ class MysqlDBInterface implements DBInterface
     }
 
 
-    public function columnsToSQL($criterias, $aliases = false)
+    public function columnsToSQL(Criteria $criteria)
     {
 
-        if (!($criterias instanceof JoinCriteria)) {
-            $criterias = array($criterias);
-        }
-
-        //print_r($criterias);
-        $columns = false;
+        $columns = "";
         $first = true;
 
-        foreach ($criterias as $criteria) {
-            $criteriaData = $criteria->getData();
-            $class = $criteria->getModel();
-            $tableName = $class::getTable();
-            $prefix = "";
+        $criteriaData = $criteria->getData();
+        $class = $criteria->getModel();
+        $tableName = $class::getTable();
 
-            //lets say custom joins dont need extra code
-            $joined = isset($criteriaData["joins"]) || isset($criteriaData["customJoins"]);
+        $joined = isset($criteriaData["joins"]);
 
-            if (!isset($criteriaData['columns'])) {
-                continue;
+        foreach ($criteriaData['columns'] as $col) {
+
+            $raw = false;
+            if (strpos($col['column'], "raw:") === 0) {
+                $tmp = substr($col['column'], 4);
+                $raw = true;
+            } elseif ($col['column'][0] == "(" || $col['custom'] == true) {
+                $tmp = $col['column'];
+            } elseif ($col['column'][0] == "'") {
+                $tmp = trim($col['column'], "'");
+            } elseif ($joined && strpos($col['column'], ":") !== false) {
+                $_tmp = explode(":", $col['column']);
+                $tmp = "`" . $_tmp[0] . "`" . ".`" . $_tmp[1] . "`";
+            } else {
+                $tmp = "{$tableName}.{$col['column']}";
             }
 
-            foreach ($criteriaData['columns'] as $col) {
-
-
-                if (strpos($col['column'], "raw:") === 0) {
-                    $tmp = substr($col['column'], 4);
-                } elseif ($col['column'][0] == "(" || $col['custom'] == true) {
-                    $tmp = $col['column'];
-                } elseif ($col['column'][0] == "'") {
-                    $tmp = trim($col['column'], "'");
-                } elseif ($joined && strpos($col['column'], ":") !== false) {
-                    $_tmp = explode(":", $col['column']);
-                    $tmp = "`" . $_tmp[0] . "`" . ".`" . $_tmp[1] . "`";
-                } else {
-                    $tmp = "{$tableName}.{$col['column']}";
-                }
-
-                //exit();
-                if ($aliases && isset($aliases[$tableName])) {
-                    $tableName = $aliases[$tableName]["alias"]; //str_replace(array('::','[',']'),array('_','_',''),$tableName);
-                }
-                //$tmp = '';
-                if (!empty($col['aggregate'])) {
-                    $agdistinct = "";
-                    $tmp = $col['aggregate'] . "($agdistinct " . $tmp . ")";
-                }
-
-                if ($first) {
-                    $columns = "\t" . $tmp . ' AS `' . $prefix . $col['alias'] . '`';
-                    $first = false;
-                } else {
-                    $columns .= ",\n\t" . $tmp . ' AS `' . $prefix . $col['alias'] . '`';
-                }
+            if (!empty($col['aggregate'])) {
+                $agdistinct = "";
+                $tmp = $col['aggregate'] . "($agdistinct " . $tmp . ")";
             }
 
-            if (isset($criteriaData["joins"])) {
-                foreach ($criteriaData["joins"] as $j) {
-                    foreach ($j["fields"] as $field) {
-                        $columns .= ",\n\t`" . $j["as"] . '`.`' . $field . '` as `' . $j["as"] . ':' . $field . '`';
-                    }
-                }
-            }
 
-            if (isset($criteriaData["customJoins"])) {
-                foreach ($criteriaData["customJoins"] as $j) {
-                    foreach ($j["fields"] as $field) {
-                        $columns .= ",\n\t`" . $j["as"] . '`.`' . $field . '` as `' . $j["as"] . ':' . $field . '`';
-                    }
+            $columns .= ($first ? "\t" : ",\n\t") . ($raw ? $tmp : $tmp . ' AS `' . $col['alias'] . '`');
+            $first = false;
+
+        }
+
+        if ($joined) {
+            foreach ($criteriaData["joins"] as $j) {
+                foreach ($j["fields"] as $field) {
+                    $columns .= ",\n\t`" . $j["as"] . '`.`' . $field . '` as `' . $j["as"] . ':' . $field . '`';
                 }
             }
         }
+
         return " \n\t" . $columns . "\n";
     }
 
@@ -694,7 +669,7 @@ class MysqlDBInterface implements DBInterface
         $query = str_replace("{limit}", $this->limitToSql($criteria), $query);
 
 
-        $query = preg_replace( "/\`(.+?)\.(.+?)\`/", "$1.$2", $query );
+        $query = preg_replace("/\`(.+?)\.(.+?)\`/", "$1.$2", $query);
 
         /*{conditions}
         {order} {limit}*/
