@@ -38,6 +38,8 @@ class Schema implements JsonSerializable
      */
     private $tables = array();
 
+    private $encoding = "utf8_unicode";
+
 
     public static function fromFiles($files){
 
@@ -58,7 +60,12 @@ class Schema implements JsonSerializable
      */
     public function getTableByClass($class)
     {
-
+        foreach ($this->tables as $table){
+            if ($table->getClass() == $class) {
+                return $table;
+            }
+        }
+        throw new SchemaException("Class '{$class}' no exists");
     }
 
     /**
@@ -129,6 +136,22 @@ class Schema implements JsonSerializable
     public function jsonSerialize()
     {
         return $this->tables;
+    }
+
+    /**
+     * @return string
+     */
+    public function getEncoding(): string
+    {
+        return $this->encoding;
+    }
+
+    /**
+     * @param string $encoding
+     */
+    public function setEncoding(string $encoding): void
+    {
+        $this->encoding = $encoding;
     }
 }
 

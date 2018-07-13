@@ -12,6 +12,8 @@ namespace Arrow\ORM\Schema;
 class Connection implements ISchemaElement
 {
 
+    public $useDBFKeys;
+
     /**
      * @var ConnectionTable[]
      */

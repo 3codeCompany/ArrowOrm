@@ -18,6 +18,9 @@ use JsonSerializable;
 class Field implements ISchemaElement, JsonSerializable
 {
 
+
+
+
     /**
      * Is primary key
      *
