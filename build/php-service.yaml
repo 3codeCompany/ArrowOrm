@@ -1,0 +1,49 @@
+FROM php:7.2.7-apache
+
+
+RUN docker-php-ext-install pdo pdo_mysql
+
+RUN apt-get update && apt-get install -y libpq-dev && docker-php-ext-install pdo pdo_pgsql
+
+
+RUN chmod -R 777 /var/run/apache2/
+RUN chown -R ${user}:${group} /var/run/apache2/
+
+
+
+ENV BITBUCKET_HOME /home/artur
+
+ARG user=artur
+ARG group=artur
+ARG uid=1000
+ARG gid=1000
+
+
+RUN mkdir ${BITBUCKET_HOME}
+RUN groupadd -g ${gid} ${group}
+RUN useradd -d "$BITBUCKET_HOME" -u ${uid} -g ${gid} -m -s /bin/bash ${user}
+RUN chmod -R 700 ${BITBUCKET_HOME}
+RUN chown -R ${user}:${group} ${BITBUCKET_HOME}
+USER ${user}
+
+
+
+
+
+
+# create a non-root user named tester,
+# give them the password "tester" put them in the sudo group
+#RUN useradd -d /home/artur -m -s /bin/bash tester && echo "artur:1410" | chpasswd && adduser artur sudo
+
+# start working in the "tester" home directory
+#WORKDIR /home/artur
+
+# Make the files owned by tester
+#RUN chown -R 1000 /home/artur
+
+# Switch to your new user in the docker image
+#USER artur
+
+#włączanie odpowiednich nagłówków
+#RUN a2enmod rewrite
+#RUN a2enmod headers
