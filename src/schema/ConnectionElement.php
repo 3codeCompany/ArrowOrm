@@ -9,7 +9,7 @@
 namespace Arrow\ORM\Schema;
 
 
-class ConnectionTable implements ISchemaElement
+class ConnectionElement implements ISchemaElement
 {
 
     /**
@@ -39,7 +39,7 @@ class ConnectionTable implements ISchemaElement
 
     /**
      * @param Table $table
-     * @return ConnectionTable
+     * @return ConnectionElement
      */
     public function setTable($table)
     {
@@ -57,7 +57,7 @@ class ConnectionTable implements ISchemaElement
 
     /**
      * @param mixed $local
-     * @return ConnectionTable
+     * @return ConnectionElement
      */
     public function setLocal($local)
     {
@@ -75,7 +75,7 @@ class ConnectionTable implements ISchemaElement
 
     /**
      * @param mixed $foreign
-     * @return ConnectionTable
+     * @return ConnectionElement
      */
     public function setForeign($foreign)
     {
@@ -93,7 +93,7 @@ class ConnectionTable implements ISchemaElement
 
     /**
      * @param array $additionalConditions
-     * @return ConnectionTable
+     * @return ConnectionElement
      */
     public function setAdditionalConditions($additionalConditions)
     {

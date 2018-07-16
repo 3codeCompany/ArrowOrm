@@ -296,9 +296,9 @@ class SchemaReader implements ISchemaReader
             foreach($tableIn->condition as $condition){
                 $additionalConditions[] = ["field" => $condition["field"]."", "value" => $condition["value"].""];
             }
-            $ct = new ConnectionTable($table, (string)$tableIn["local"], (string)$tableIn["foreign"], $additionalConditions);
+            $ct = new ConnectionElement($table, (string)$tableIn["local"], (string)$tableIn["foreign"], $additionalConditions);
 
-            $connection->tables[] = $ct;
+            $connection->elements[] = $ct;
 
 
         }

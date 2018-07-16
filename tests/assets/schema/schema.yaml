@@ -1,47 +1,55 @@
-encoding: utf8_unicode_ci
+encoding: utf8 COLLATE utf8_unicode_ci
 objects:
 
-    \App\Models\ERP\Transport\TransportOrder:
-        table: erp_transport_order
+    ORM\Tests\Objects\Post:
+        table: orm_posts
         fields:
             id:
                 type: int
-                primaryKey: true
-                autoincrement: true
+                primary-key: true
+                auto-increment: true
                 size: 11
                 meta:
                     label: ID
             created:
                 type: datetime
-                default: NOW()
-            status:
-                type: varchar
-                size: 255
+                default: ORM:NOW
 
-                meta:
-                    label: Status
-                required: true
-            prioryty:
-                type: int
-                size: 1
-                default: 0
-                meta:
-                    label: Priorytet
-                    options:
-                        1: Standard
-                        2: Wyższy priotytet
-                        3: Ważne
+            date:
+                type: date
 
-            original_created_by:
+            user_id:
                 type: int
                 size: 11
+                meta:
+                    label: User conn
+                required: true
+            type:
+                type: enum
+                default: 1
+                meta:
+                    label: Type
+                    options:
+                        1: Standard
+                        2: Important
+                        3: Very important
+
+            title:
+                type: varchar
+                size: 500
+                required: true
+
+            content:
+                type: text
+                nullable: true
+
 
         connections:
             user:
                 useDBFKeys: false
                 path:
-                -   class: \Arrow\Access\Models\User:
-                    localField: created_by
+                -   class: ORM\Tests\Objects\User
+                    localField: user_id
                     foreignField: id
                     conditions:
                     -   field: id
@@ -56,16 +64,58 @@ objects:
         indexes:
             test:
                 columns:
-                - status
+                    -
+                        column: content
+                        size: 5
+                    -
+                        column: title
+                        size: 40
+
                 type: index
 
-    \Arrow\Access\Models\User:
-        table: xxxx
+    ORM\Tests\Objects\User:
+        table: orm_users
         fields:
             id:
                 type: int
-                autoincrement: true
-                primaryKey: true
+                auto-increment: true
+                primary-key: true
+
+            created:
+                type: datetime
+                default: ORM:NOW
+
+            login:
+                type: varchar
+                size: 500
+                required: true
+            password:
+                type: varchar
+                size: 32
+                required: true
+
+            email:
+                type: varchar
+                size: 500
+                required: true
+
+            name:
+                type: varchar
+                size: 100
+            age:
+                type: int
+                size: 2
+
+
+
+    ORM\Tests\Objects\Contractor:
+        extension-to: ORM\Tests\Objects\User
+        fields:
+            company_name:
+                type: varchar
+                size: 100
+                required: true
+
 
 
 

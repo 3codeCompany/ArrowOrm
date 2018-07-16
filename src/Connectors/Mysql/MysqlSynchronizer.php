@@ -1,4 +1,5 @@
 <?php
+
 namespace Arrow\ORM\Connectors\Mysql;
 
 use Arrow\ORM\Exception;
@@ -6,6 +7,8 @@ use Arrow\ORM\Schema\AbstractMismatch;
 use Arrow\ORM\Schema\AbstractSynchronizer;
 use Arrow\ORM\Schema\DatasourceMismatch;
 use Arrow\ORM\Schema\Field;
+use Arrow\ORM\Schema\FieldTypes;
+use Arrow\ORM\Schema\Index;
 use Arrow\ORM\Schema\ResolvedMismatch;
 use Arrow\ORM\Schema\Schema;
 use Arrow\ORM\Schema\SchemaMismatch;
@@ -79,6 +82,8 @@ class MysqlSynchronizer extends AbstractSynchronizer
             $dbTables[] = $row[0];
         }
         $schemaTables = array();
+
+        //SELECT TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME, ORDINAL_POSITION, COLUMN_DEFAULT, IS_NULLABLE,DATA_TYPE,CHARACTER_MAXIMUM_LENGTH,CHARACTER_SET_NAME, COLLATION_NAME, COLUMN_TYPE, COLUMN_KEY,EXTRA FROM `COLUMNS` where TABLE_SCHEMA="orm"
 
         foreach ($schema->getTables() as $table) {
             if ($table->getExtension() != null) {
@@ -156,7 +161,7 @@ class MysqlSynchronizer extends AbstractSynchronizer
         if ($mismatch instanceof SchemaMismatch) {
             //table
             if ($mismatch->element instanceof Table) {
-                $sql = $this->createTable($mismatch->element);
+                $sql = $this->createTable($schema, $mismatch->element);
             }
 
             //field
@@ -187,6 +192,15 @@ class MysqlSynchronizer extends AbstractSynchronizer
                         $sql = $this->updateField($mismatch->parentElement, $mismatch->element, true);
                     } elseif ($mode == self::MODE_DS_TO_SCHEMA) {
                         $mismatch->element->setName($mismatch->element->getOldName());
+                    }
+                }
+            }
+
+            if ($mismatch->element instanceof Index) {
+                if ($mismatch->type == SchemaMismatch::NOT_EXISTS) {
+                    if ($mode == self::MODE_SCHEMA_TO_DS || $mode == self::MODE_ALL) {
+                        //creating field on datasource
+                        $sql = $this->createIndex($mismatch->parentElement, $mismatch->element);
                     }
                 }
             }
@@ -312,8 +326,9 @@ class MysqlSynchronizer extends AbstractSynchronizer
      *
      * @param Table $table
      * @return string
+     * @throws Exception
      */
-    private function createTable(Table $table)
+    private function createTable(Schema $schema, Table $table)
     {
         $sql = "CREATE TABLE {$table->getTableName()}(";
         $count = count($table->getFields());
@@ -323,7 +338,7 @@ class MysqlSynchronizer extends AbstractSynchronizer
                 $sql .= ",\n";
             }
         }
-        $sql .= ")";
+        $sql .= ") ENGINE=InnoDB DEFAULT CHARSET=" . $schema->getEncoding();
 
         $this->update($sql);
         return $sql;
@@ -334,8 +349,22 @@ class MysqlSynchronizer extends AbstractSynchronizer
 
         $mismatches = array();
 
-        $statement = $this->query("SHOW COLUMNS FROM `{$table->getTableName()}`");
-        $columns = $result = $statement->fetchAll(\PDO::FETCH_ASSOC);
+        $db = $this->query("select DATABASE()")->fetchColumn();
+
+        $q = "
+          SELECT 
+            TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME, ORDINAL_POSITION, COLUMN_DEFAULT, 
+            IS_NULLABLE,DATA_TYPE,CHARACTER_MAXIMUM_LENGTH,CHARACTER_SET_NAME, COLLATION_NAME, 
+            COLUMN_TYPE, COLUMN_KEY,EXTRA FROM information_schema.`COLUMNS` 
+          where 
+            TABLE_SCHEMA='{$db}'
+            and TABLE_NAME='{$table->getTableName()}'
+          ";
+
+
+        //$statement = $this->query("SHOW COLUMNS FROM `{$table->getTableName()}`");
+        //$columns = $result = $statement->fetchAll(\PDO::FETCH_ASSOC);
+        $columns = $this->query($q)->fetchAll(\PDO::FETCH_ASSOC);
         $tableFields = $table->getFields();
 
         //iterating over schema fields ( only check if exists, rest of checks  are in the next loop )
@@ -343,7 +372,7 @@ class MysqlSynchronizer extends AbstractSynchronizer
             $exists = false;
 
             foreach ($columns as $column) {
-                if ($field->getName() == $column["Field"] || $field->getOldName() == $column["Field"]) {
+                if ($field->getName() == $column["COLUMN_NAME"]) {
                     $exists = true;
                     break;
                 }
@@ -358,12 +387,12 @@ class MysqlSynchronizer extends AbstractSynchronizer
         //iterating over db columns
         foreach ($columns as $column) {
 
-            if (!isset($tableFields[$i]) || $tableFields[$i]->getName() != $column["Field"]) {
+            if (!isset($tableFields[$i]) || $tableFields[$i]->getName() != $column["COLUMN_NAME"]) {
                 $exists = false;
                 if (isset($tableFields[$i])) {
                     //checks that field exists in db
                     foreach ($columns as $tmp) {
-                        if ($tableFields[$i] == $tmp["Field"]) {
+                        if ($tableFields[$i] == $tmp["COLUMN_NAME"]) {
                             $exists = true;
                             break;
                         }
@@ -379,37 +408,25 @@ class MysqlSynchronizer extends AbstractSynchronizer
                     $exists = false;
                     $existsField = false;
                     foreach ($tableFields as $field) {
-                        if ($field->getName() == $column["Field"]) {
+                        if ($field->getName() == $column["COLUMN_NAME"]) {
                             $exists = true;
                             $existsField = $field;
                             break;
                         }
                     }
-                    $existByOldName = false;
-                    if (!$exists) {
-                        $existsField = false;
-                        foreach ($tableFields as $field) {
-                            if ($field->getOldName() == $column["Field"]) {
-                                $existByOldName = true;
-                                $existsField = $field;
-                                break;
-                            }
-                        }
-                    }
 
-                    if ($existByOldName) {
-                        $mismatches[] = new SchemaMismatch($schema, $table, $existsField, SchemaMismatch::NAME_NOT_EQUALS);
-                    } elseif ($exists) {
+
+                    if ($exists) {
                         $mismatches[] = new SchemaMismatch($schema, $table, $existsField, SchemaMismatch::INDEX_NOT_EQUALS);
                     } else {
-                        $mismatches[] = new DatasourceMismatch($schema, $table->getTableName(), $column["Field"], DatasourceMismatch::ELEMENT_TYPE_FIELD, SchemaMismatch::NOT_EXISTS);
+                        $mismatches[] = new DatasourceMismatch($schema, $table->getTableName(), $column["COLUMN_NAME"], DatasourceMismatch::ELEMENT_TYPE_FIELD, SchemaMismatch::NOT_EXISTS);
                         $i--;
                     }
                 }
 
             } else {
 
-                if ($this->checkField($tableFields[$i], $column) == false) {
+                if ($this->checkField($schema, $tableFields[$i], $column) == false) {
                     $mismatches[] = new SchemaMismatch($schema, $table, $tableFields[$i], SchemaMismatch::NOT_EQUALS);
                 }
             }
@@ -417,109 +434,123 @@ class MysqlSynchronizer extends AbstractSynchronizer
             $i++;
         }
 
+
         return $mismatches;
 
     }
 
-    private function checkField(Field $field, $column)
+
+    private function checkField(Schema $schema, Field $field, $column)
     {
 
+        $pass = true;
 
-        if ($field->isPKey() && $column["Key"] != "PRI") {
-            return false;
+
+        if ($field->isPKey() && $column["COLUMN_KEY"] != "PRI") {
+            $pass = false;
         }
-        if ($field->isAutoincrement() && $column["Extra"] != "auto_increment") {
-            return false;
+        if ($field->isAutoincrement() && $column["EXTRA"] != "auto_increment") {
+            $pass = false;
         }
-        if ($field->getDefault() && $field->getDefault() != $column["Default"]) {
-            return false;
-        }
-        if ($field->isRequired() && $column["Null"] != "NO") {
-            return false;
+        if ($field->getDefault() && $field->getDefault() != $column["COLUMN_DEFAULT"]) {
+            if (!($field->getDefault() == "ORM:NOW" && $column["COLUMN_DEFAULT"] == "CURRENT_TIMESTAMP")) {
+                $pass = false;
+            }
         }
 
-        $tmp = explode("(", $column["Type"]);
-        $type = $tmp[0];
+        //$field->isRequired() - to nie sprawdzenie dla bazy
 
-        $size = false;
+        if ($field->isNullable() && $column["IS_NULLABLE"] != "YES") {
+            $pass = false;
+        }
+        if (!$field->isNullable() && $column["IS_NULLABLE"] != "NO") {
+            $pass = false;
+        }
 
 
         //longvarchar is changed for text and it not posses size
         if ($field->getSize() && $field->getType() != "LONGVARCHAR") {
+            $tmp = explode("(", $column["COLUMN_TYPE"]);
             if (isset($tmp[1])) {
                 $size = str_replace(")", "", $tmp[1]);
                 if ($field->getSize() != $size) {
-                    return false;
+                    $pass = false;
                 }
             }
         }
 
-
         $types = array("INTEGER" => "INT", "LONGVARCHAR" => "TEXT");
         $testType = strtolower(str_replace(array_keys($types), $types, $field->getType()));
 
+        if ($testType == "text" && !in_array($column["DATA_TYPE"], array("text", "mediumtext", "longtext"))) {
+            $pass = false;
+        } elseif ($testType != "text" && $testType != $column["DATA_TYPE"]) {
+            $pass = false;
+        }
 
-        /**
-         * @todo Probably problem width columns in utf mysql creates bigger fields instead
-         *       text we have medium text etc.... co we have to hack system , so fix and uncoment to check
-         *       text field precysly
-         */
-        /*
-        if($testType == "text" && $size < 65535 )
-            $testType = "text";
-        elseif($testType == "text" && $size < 16777215 )
-            $testType = "mediumtext";
-        elseif($testType == "text" && $size > 16777215 )
-            $testType = "longtext";
-        */
-        //todo sprawdzic czemu oba pola zmieniamy na integer - powinno tylko jedno
-        if ($type == "int") $type = "integer";
-        if ($testType == "int") $testType = "integer";
+        if ($testType == FieldTypes::ENUM) {
+            $val = "enum('" . implode("','", array_keys($field->getMetaData()->getOptions())) . "')";
+            if ($val != $column["COLUMN_TYPE"]) {
+                $pass = false;
+            }
 
-        if ($testType == "text" && !in_array($type, array("text", "mediumtext", "longtext"))) {
+        }
 
-            return false;
-        } elseif ($testType != "text" && $testType != $type) {
-            return false;
+        if ($column["CHARACTER_SET_NAME"]) {
+            if ($column["CHARACTER_SET_NAME"] . " COLLATE " . $column["COLLATION_NAME"] != $schema->getEncoding()) {
+                $pass = false;
+            }
         }
 
 
-        return true;
+        return $pass;
     }
 
     private function checkIndexes(Schema $schema, Table $table)
     {
-        $mismatches = array();
+
 
         $query = "SHOW INDEXES  FROM `{$table->getTableName()}`";
-        $dsindexes = $this->query($query)->fetchAll(\PDO::FETCH_ASSOC);
+        $dsIndexes = $this->query($query)->fetchAll(\PDO::FETCH_ASSOC);
 
-        //TODO sprawdzenia indexów
-        return array();
+
         foreach ($table->getIndexes() as $index) {
-            $exists = false;
 
-            foreach ($dsindexes as $dsIndex) {
+            $indexColumns = [];
+            $indexColumns[$index->getName()] = [];
+            foreach ($dsIndexes as $dsIndex) {
 
+                if ($index->getName() == $dsIndex["Key_name"]) {
 
-                //spawdzenie indexu z ds
-                /*
-                        $index = new Index();
-                $index->setName($indexName);
-                $index->setType($dsIndex[0]["Index_type"]);
-
-                foreach($dsIndex as $element)
-                    $index->addFieldName( $element["Column_name"] );
-                */
-
+                    $indexColumns[$index->getName()][] = $dsIndex["Column_name"];
+                }
             }
-            if (!$exists) {
-                $mismatches[] = new DatasourceMismatch($schema, $ds, $table, $dsIndex, DatasourceMismatch::ELEMENT_TYPE_FOREIGN_KEY, AbstractMismatch::NOT_EXISTS);
+            if (count($indexColumns[$index->getName()]) == 0) {
+                $mismatches[] = new SchemaMismatch($schema, $table, $index, SchemaMismatch::NOT_EXISTS);
+            }
+            $reduced = array_reduce($index->getColumns(), function($p,$c){ $p[] = $c["column"]; return $p; },[]);
+            $diff = array_diff($indexColumns[$index->getName()], $reduced);
+            if (count($diff) != 0) {
+                $mismatches[] = new SchemaMismatch($schema, $table, $index, SchemaMismatch::NOT_EQUALS);
             }
 
         }
-        //PKey is already checked in fields check
-        //	if( $dsIndex["Key_name"] != "PRIMARY"){
+
+
+        foreach ($dsIndexes as $dsIndex) {
+            if ($dsIndex["Key_name"] != "PRIMARY") {
+                $exists = false;
+                foreach ($table->getIndexes() as $index) {
+                    if ($index->getName() == $dsIndex["Key_name"]) {
+                        $exists = true;
+                    }
+                }
+                if (!$exists) {
+                    $mismatches[] = new DatasourceMismatch($schema, $table->getTableName(), $dsIndex["Key_name"], DatasourceMismatch::ELEMENT_TYPE_INDEX, SchemaMismatch::NOT_EXISTS);
+                }
+
+            }
+        }
 
         return $mismatches;
     }
@@ -641,6 +672,30 @@ class MysqlSynchronizer extends AbstractSynchronizer
         return $sql;
     }
 
+    private function createIndex(Table $table, Index $index)
+    {
+        $tmp = [];
+        foreach ($index->getColumns() as $col) {
+            $tmp[] = "`{$col["column"]}`(${col["size"]})";
+        }
+        $sql = "ALTER TABLE `{$table->getTableName()}` ADD " . ($index->getType() == "UNIQUE" ? "UNIQUE " : "") . " KEY (" . implode(",", $tmp) . ") USING " . $index->getKind();
+
+        $this->update($sql);
+        return $sql;
+
+    }
+
+    private function updateIndex(Table $table, Index $index)
+    {
+        throw new Exception("Not implemented");
+    }
+
+    private function deleteIndex(Table $table, Index $index)
+    {
+
+        throw new Exception("Not implemented");
+    }
+
 
     private function translateType($type)
     {
@@ -653,8 +708,17 @@ class MysqlSynchronizer extends AbstractSynchronizer
     {
         $sql = "`{$field->getName()}` {$this->translateType($field->getType())}";
 
+        if ($field->getType() == FieldTypes::ENUM) {
+            $options = $field->getMetaData()->getOptions();
+            $sql .= "('" . implode("','", array_keys($options)) . "')";
+        }
+
         if ($field->getSize()) {
             $sql .= "({$field->getSize()})";
+        }
+
+        if (!$field->isNullable()) {
+            $sql .= " NOT NULL";
         }
 
         if ($field->isAutoincrement()) {
@@ -670,7 +734,18 @@ class MysqlSynchronizer extends AbstractSynchronizer
         }
 
         if ($field->getDefault()) {
-            $sql .= " DEFAULT  '{$field->getDefault()}'";
+            $d = $field->getDefault();
+            $def = is_int($d) ? $d : "'{$d}'";
+            if ($d == "ORM:NOW") {
+                if ($field->getType() == FieldTypes::DATETIME) {
+                    $def = "NOW()";
+                } else if ($field->getType() == FieldTypes::DATE) {
+                    $def = "CURDATE()";
+                } else {
+                    throw new Exception("Unknows ORM:NOW default value for `{$field->getType()}` type");
+                }
+            }
+            $sql .= " DEFAULT  {$def}";
         }
 
         return $sql;

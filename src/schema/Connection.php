@@ -12,13 +12,13 @@ namespace Arrow\ORM\Schema;
 class Connection implements ISchemaElement
 {
 
-    public $useDBFKeys;
+    private $useDBFKeys;
 
     /**
-     * @var ConnectionTable[]
+     * @var ConnectionElement[]
      */
-    public $tables = [];
-    public $name = "";
+    private $elements = [];
+    private $name = "";
 
     public function toArray()
     {
@@ -29,6 +29,57 @@ class Connection implements ISchemaElement
     {
         // TODO: Implement toString() method.
     }
+
+    /**
+     * @return mixed
+     */
+    public function isUsingDBFKeys()
+    {
+        return $this->useDBFKeys;
+    }
+
+    /**
+     * @param mixed $useDBFKeys
+     */
+    public function setUseDBFKeys($useDBFKeys): void
+    {
+        $this->useDBFKeys = $useDBFKeys;
+    }
+
+    /**
+     * @return ConnectionElement[]
+     */
+    public function getElements(): array
+    {
+        return $this->elements;
+    }
+
+    /**
+     * @param ConnectionElement[] $elements
+     */
+    public function setElements(array $elements): void
+    {
+        $this->elements = $elements;
+    }
+
+    /**
+     * @return string
+     */
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
+    /**
+     * @param string $name
+     */
+    public function setName(string $name): void
+    {
+        $this->name = $name;
+    }
+
+
+
 
 
 }

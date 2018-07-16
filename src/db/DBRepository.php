@@ -11,12 +11,14 @@
  *
  * @date 2009-06-01
  */
+
 use Arrow\ORM\Exception;
 use Arrow\ORM\Persistent\Criteria;
 use Arrow\ORM\Persistent\DataSet;
 use Arrow\ORM\Persistent\PersistentObject;
 use Arrow\ORM\Schema\BaseDomainClassGenerator;
 use Arrow\ORM\Schema\ISchemaTransformer;
+use Arrow\ORM\Schema\Readers\YamlSchemaReader;
 use Arrow\ORM\Schema\Schema;
 use Arrow\ORM\Schema\SchemaReader;
 use Psr\Log\LoggerAwareInterface;
@@ -224,10 +226,34 @@ class DBRepository implements LoggerAwareInterface
         require $file;
     }
 
+
+    public function getMissMatches()
+    {
+        $schemaFiles = ($this->getConfigCallback)();
+
+        if (strpos($schemaFiles[0], "yaml")) {
+            $schema = (new YamlSchemaReader())->readSchemaFromFile($schemaFiles);
+        } else {
+            $schema = (new SchemaReader())->readSchemaFromFile($schemaFiles);
+        }
+        $synchronizer = $this->connectionInterface->getSynchronizer();
+
+        $synchronizer->setPreventRemoveActions($this->isPreventRemoveActions());
+        $synchronizer->setForeignKeysIgnore(true);
+        $mismaches = $synchronizer->getSchemaMismatches($schema, $this->connection);
+        return $mismaches;
+
+    }
+
     public function synchronize()
     {
         $schemaFiles = ($this->getConfigCallback)();
-        $schema = (new SchemaReader())->readSchemaFromFile($schemaFiles);
+
+        if (strpos($schemaFiles[0], "yaml")) {
+            $schema = (new YamlSchemaReader())->readSchemaFromFile($schemaFiles);
+        } else {
+            $schema = (new SchemaReader())->readSchemaFromFile($schemaFiles);
+        }
 
 
         $this->generateBaseModels($schema);

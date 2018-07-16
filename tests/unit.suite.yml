@@ -8,10 +8,10 @@ modules:
     - Asserts
     - \Helper\Unit
     -   Db:
-            dsn: 'mysql:host=mysql;dbname=orm'
+            dsn: 'mysql:host=localhost;dbname=orm'
             user: 'root'
-            password: secret
-            #dump: 'tests/_data/dump.sql'
+            password: 'root'
+            #dump: './tests/_data/dump.sql'
             populate: true
             cleanup: true
             reconnect: true

@@ -147,7 +147,7 @@ class SchemaWriter implements ISchemaWriter
         $indexNode = $node->addChild('index');
         $indexNode->addAttribute("name", $index->getName());
         $indexNode->addAttribute("type", $index->getType());
-        foreach ($index->getFieldNames() as $field) {
+        foreach ($index->getColumns() as $field) {
             $tmp = $indexNode->addChild('index-field');
             $tmp->addAttribute("name", $field);
         }

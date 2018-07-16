@@ -177,8 +177,8 @@ class GraphQLSchemaGenerator implements ISchemaTransformer
     {
         $str = "";
         foreach ($connections as $conn) {
-            foreach ($conn->tables as $index => $connTable) {
-                if ($index == count($conn->tables) - 1) {
+            foreach ($conn->elements as $index => $connTable) {
+                if ($index == count($conn->elements) - 1) {
                     $str .= $this->loadConnections($connTable->getTable()->getConnections());
                     $str .= $this->processClass($connTable->getTable());
                 }
@@ -208,8 +208,8 @@ class GraphQLSchemaGenerator implements ISchemaTransformer
             $str .= $this->processField($field);
         }
         foreach ($table->getConnections() as $connection) {
-            foreach ($connection->tables as $index => $connTable) {
-                if ($index == count($connection->tables) - 1) {
+            foreach ($connection->elements as $index => $connTable) {
+                if ($index == count($connection->elements) - 1) {
                     $str .= $this->registerTable($connTable->getTable(), $connection);
                 }
 

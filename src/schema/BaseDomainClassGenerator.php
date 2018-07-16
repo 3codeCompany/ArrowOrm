@@ -198,9 +198,10 @@ EOT;
 
             foreach (["dataset", "criteria"] as $type) {
 
-                $fName = "_conn_" . ucfirst($connection->name);
+                $elements = $connection->getElements();
+                $fName = "_conn_" . ucfirst($connection->getName());
                 $fName = $type == "criteria" ? $fName . "Criteria" : $fName;
-                $lastTable = $connection->tables[count($connection->tables) - 1]->getTable();
+                $lastTable = $elements[count($elements) - 1]->getTable();
                 $_namespace = str_replace("\\", "_", $lastTable->getNamespace());
                 $_className = "ORM" . ($_namespace ? "_" . $_namespace : "") . "_{$lastTable->getClassName()}";
 
@@ -215,15 +216,15 @@ EOT;
                 $this->pl($x, $str);
 
                 $this->pl("public function " . $fName . "(" . ($type == "criteria" ? "" : "\$columns = []") . "){ ", $str, 1);
-                if (count($connection->tables) == 1) {
-                    $this->pl("\$result = [ \$this->getValue('{$connection->tables[0]->getLocal()}') ];", $str);
+                if (count($elements) == 1) {
+                    $this->pl("\$result = [ \$this->getValue('{$elements[0]->getLocal()}') ];", $str);
                 }
-                $length = count($connection->tables);
-                foreach ($connection->tables as $index => $connTable) {
+                $length = count($elements);
+                foreach ($elements as $index => $connTable) {
 
                     $isLast = $index == $length - 1;
                     if (!$isLast) {
-                        $nextColumn = $connection->tables[$index + 1]->getLocal();
+                        $nextColumn = $elements[$index + 1]->getLocal();
                         $x = "\$crit = {$connTable->getTable()->getClass()}::get()->c('{$connTable->getForeign()}', \$this->getValue('{$connTable->getLocal()}'));";
                         $this->pl($x, $str);
                         foreach ($connTable->getAdditionalConditions() as $condition) {

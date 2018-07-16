@@ -222,6 +222,7 @@ class Table implements ISchemaElement, JsonSerializable
      * Return field by given name
      *
      * @param String $name
+     * @return Field
      */
     public function getFieldByName($name)
     {

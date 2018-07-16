@@ -19,7 +19,7 @@
                         "required": ["table", "fields"]
                     },
                     {
-                        "required": ["extensionTo"]
+                        "required": ["extension-to"]
                     }
                 ],
                 "additionalProperties": false,
@@ -27,7 +27,7 @@
                     "table": {
                         "type": "string"
                     },
-                    "extensionTo": {
+                    "extension-to": {
                         "type": "string"
                     },
                     "fields": {
@@ -39,12 +39,12 @@
                             "properties": {
                                 "type": {
                                     "type": "string",
-                                    "enum": ["int", "varchar", "text", "date", "datetime"]
+                                    "enum": ["int", "varchar", "text", "date", "datetime", "enum" ]
                                 },
-                                "primaryKey": {
+                                "primary-key": {
                                     "type": "boolean"
                                 },
-                                "autoincrement": {
+                                "auto-increment": {
                                     "type": "boolean"
                                 },
                                 "default": {
@@ -54,6 +54,9 @@
                                     "type": "integer"
                                 },
                                 "required": {
+                                    "type": "boolean"
+                                },
+                                "nullable": {
                                     "type": "boolean"
                                 },
                                 "meta": {
@@ -137,8 +140,25 @@
                                     "type": "string",
                                     "enum": ["index", "unique", "fulltext"]
                                 },
+                                "kind": {
+                                  "type": "string",
+                                  "enum": ["BTREE", "HASH"]
+                                },
                                 "columns": {
-                                    "type": "array"
+                                    "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "required": ["column", "size"],
+                                    "properties": {
+                                      "column": {
+                                        "type": "string"
+                                      },
+                                      "size": {
+                                        "type": "integer"
+                                      }
+                                    }
+                                  }
                                 },
                                 "size": {
                                     "type": "integer"

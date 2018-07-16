@@ -1,6 +1,7 @@
 <?php
 namespace Arrow\ORM\Schema;
 
+use Codeception\Test\Metadata;
 use JsonSerializable;
 
 /**
@@ -14,11 +15,8 @@ use JsonSerializable;
  *
  * @date 2011-07-18
  */
-
 class Field implements ISchemaElement, JsonSerializable
 {
-
-
 
 
     /**
@@ -35,14 +33,7 @@ class Field implements ISchemaElement, JsonSerializable
      */
     private $name;
 
-    /**
-     * Field old name - this property is used if
-     * you whant to rename field ( in db there is old name (oldName)
-     * and in schema we have new name (name)
-     *
-     * @var string
-     */
-    private $oldName;
+    
 
     /**
      * Field type
@@ -78,7 +69,15 @@ class Field implements ISchemaElement, JsonSerializable
      *
      * @var bool
      */
-    private $autoincrement;
+    private $autoincrement = false;
+
+
+    private $nullable = false;
+
+    /**
+     * @var FieldMetaData
+     */
+    private $metaData = null;
 
     /**
      * (non-PHPdoc)
@@ -130,15 +129,6 @@ class Field implements ISchemaElement, JsonSerializable
         $this->name = $name;
     }
 
-    public function getOldName()
-    {
-        return $this->oldName;
-    }
-
-    public function setOldName($name)
-    {
-        $this->oldName = $name;
-    }
 
     public function rename($newName)
     {
@@ -190,10 +180,10 @@ class Field implements ISchemaElement, JsonSerializable
     {
 
         $data = array(
-            "name"    => $this->name,
+            "name" => $this->name,
             "oldName" => $this->oldName,
-            "type"    => $this->type,
-            "size"    => $this->size
+            "type" => $this->type,
+            "size" => $this->size
         );
 
         if ($this->pKey) {
@@ -215,6 +205,36 @@ class Field implements ISchemaElement, JsonSerializable
         return $data;
     }
 
+    public function getMetaData()
+    {
+        return $this->metaData;
+
+    }
+
+    /**
+     * @param mixed $metaData
+     */
+    public function setMetaData($metaData)
+    {
+        $this->metaData = $metaData;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isNullable(): bool
+    {
+        return $this->nullable;
+    }
+
+    /**
+     * @param bool $nullable
+     */
+    public function setNullable(bool $nullable): void
+    {
+        $this->nullable = $nullable;
+    }
+
 
     /**
      * Specify data which should be serialized to JSON
@@ -225,7 +245,7 @@ class Field implements ISchemaElement, JsonSerializable
      */
     public function jsonSerialize()
     {
-        return[
+        return [
             "pKey" => $this->pKey,
             "name" => $this->name,
             "type" => $this->type,

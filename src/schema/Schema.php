@@ -41,7 +41,8 @@ class Schema implements JsonSerializable
     private $encoding = "utf8_unicode";
 
 
-    public static function fromFiles($files){
+    public static function fromFiles($files)
+    {
 
     }
 
@@ -51,17 +52,15 @@ class Schema implements JsonSerializable
     }
 
     /**
-     * Return table by class name
-     *
-     * @param string $class
-     *
-     * @return void
-     * @todo implement
+     * @param $class
+     * @return Table
+     * @throws SchemaException
      */
     public function getTableByClass($class)
     {
-        foreach ($this->tables as $table){
-            if ($table->getClass() == $class) {
+
+        foreach ($this->tables as $table) {
+            if ($table->getClass() == $class || $table->getClass() == "\\" . $class) {
                 return $table;
             }
         }

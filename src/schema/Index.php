@@ -29,6 +29,8 @@ class Index implements ISchemaElement
      */
     private $type;
 
+    private $kind = "BTREE";
+
 
     public function getName()
     {
@@ -55,14 +57,14 @@ class Index implements ISchemaElement
      *
      * @var string []
      */
-    public $fieldsNames = array();
+    public $fieldsNames = [];
 
     /**
      * Returns table fields
      *
      * @return Field []
      */
-    public function getFieldNames()
+    public function getColumns()
     {
         return $this->fieldsNames;
     }
@@ -72,9 +74,9 @@ class Index implements ISchemaElement
      *
      * @param string $fieldName
      */
-    public function addFieldName($fieldName)
+    public function addFieldName($name, $size)
     {
-        $this->fieldsNames[] = $fieldName;
+        $this->fieldsNames[] = ["column" => $name, "size" => $size];
     }
 
     /**
@@ -115,6 +117,24 @@ class Index implements ISchemaElement
             "name" => $this->name
         );
     }
+
+    /**
+     * @return string
+     */
+    public function getKind(): string
+    {
+        return $this->kind;
+    }
+
+    /**
+     * @param string $kind
+     */
+    public function setKind(string $kind): void
+    {
+        $this->kind = $kind;
+    }
+
+
 }
 
 ?>

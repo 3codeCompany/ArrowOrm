@@ -18,3 +18,4 @@ terminal:
 
 
 
+tests:

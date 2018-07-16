@@ -11,10 +11,12 @@ namespace Arrow\ORM\Schema\Readers;
 
 use Arrow\ORM\Exception;
 use Arrow\ORM\Schema\Connection;
-use Arrow\ORM\Schema\ConnectionTable;
+use Arrow\ORM\Schema\ConnectionElement;
 use Arrow\ORM\Schema\Field;
+use Arrow\ORM\Schema\Index;
 use Arrow\ORM\Schema\Schema;
 use Arrow\ORM\Schema\Table;
+use Arrow\ORM\Schema\FieldMetaData;
 use Symfony\Component\Yaml\Yaml;
 
 class YamlSchemaReader
@@ -49,11 +51,13 @@ class YamlSchemaReader
                     continue;
                 }
                 $table = $this->readTable($schema, $object, $tableData);
-                if (!isset($tableData["extensionTo"])) {
+                if (!isset($tableData["extension-to"])) {
                     $schema->addTable($table);
                 }
             }
         }
+
+
         /**
          * We need loaded whole schema to read f keys and extensions
          */
@@ -64,15 +68,19 @@ class YamlSchemaReader
                 if ($tableData["disabled"] ?? false) {
                     continue;
                 }
-                $name = $tableData["table"];
-                if (empty($name)) {
-                    $name = $tableData['extensionTo'];
-                }
-                $table = $schema->getTableByTable($name);
 
-                if ($tableData["extensionTo"] ?? false) {
+                if (isset($tableData['extension-to'])) {
+                    $name = $tableData['extension-to'];
+                    $table = $schema->getTableByClass($name);
+                }else{
+                    $name = $tableData["table"] ?? null;
+                    $table = $schema->getTableByTable($name);
+                }
+
+
+                if ($tableData["extension-to"] ?? false) {
                     foreach ($tableData["fields"] as $name => $fieldData) {
-                        $field = $this->readField($table, $name, $fieldData);
+                        $field = $this->readField( $name, $fieldData);
                         $table->addField($field);
                     }
                 }
@@ -82,33 +90,6 @@ class YamlSchemaReader
                     $table->addConnection($connection);
                 }
 
-
-                foreach ($tableData->children() as $tag => $_node) {
-                    switch ($tag) {
-                        case 'field':
-                            //dodaje pola tylko jeśli to rosszeżenie
-                            if ($node["extension-to"]) {
-                                $field = $this->readField($_node);
-                                $table->addField($field);
-                            }
-                            break;
-                        case 'index':
-                            break;
-                        case 'extensions':
-                            break;
-                        case 'trackers':
-                            break;
-                        case 'connection':
-
-                            break;
-                        case 'foreign-key':
-                            $foreignKey = $this->readForeignKey($schema, $table, $_node);
-                            $table->addForeignKey($foreignKey);
-                            break;
-                        default:
-                            throw new SchemaException("Unknown schema element '$tag'");
-                    }
-                }
             }
 
         }
@@ -164,11 +145,19 @@ class YamlSchemaReader
         $table = new Table();
         $table->setClass($object);
 
-        $table->setTableName($data['table']);
+        $table->setTableName($data['table'] ?? null);
         foreach ($data["fields"] as $name => $fieldData) {
             $field = $this->readField($name, $fieldData);
             $table->addField($field);
         }
+
+        if (isset($data["indexes"])) {
+            foreach ($data["indexes"] as $name => $indexData) {
+                $index = $this->readIndex($table, $name, $indexData);
+                $table->addIndex($index);
+            }
+        }
+
         //connections and fkeys are read later
 
         return $table;
@@ -186,13 +175,22 @@ class YamlSchemaReader
     {
         $field = new Field();
         $field->setName($name);
-
         $field->setType($data["type"]);
-        $field->setAutoincrement($data["autoIncrement"] ?? false);
-        $field->setPKey($data["primaryKey"] ?? false);
+        $field->setAutoincrement($data["auto-increment"] ?? false);
+        $field->setPKey($data["primary-key"] ?? false);
         $field->setSize($data["size"] ?? false);
         $field->setRequired($data["required"] ?? false);
         $field->setDefault($data["default"] ?? false);
+        $field->setNullable($data["nullable"] ?? false);
+
+
+        if (isset($data["meta"])) {
+            $metadata = new FieldMetaData();
+            $metadata->setLabel($data["meta"]["label"] ?? null);
+            $metadata->setOptions($data["meta"]["options"] ?? null);
+            $metadata->setData($data["meta"]["data"] ?? null);
+            $field->setMetaData($metadata);
+        }
 
         return $field;
 
@@ -238,29 +236,29 @@ class YamlSchemaReader
     public function readConnection(Schema $schema, Table $table, $connName, $data)
     {
         $connection = new Connection();
-        $connection->useDBFKeys = $data["useDBFKeys"];
+        $connection->setUseDBFKeys($data["useDBFKeys"]);
 
-        $connection->name = $connName;
+        $connection->setName($connName);
+
+        $elements = [];
         foreach ($data["path"] as $class => $tableIn) {
 
 
             $_table = $schema->getTableByClass($tableIn["class"]);
             if (!$_table) {
-                print "<pre>";
-                print_r($schema);
-                exit();
-                throw new Exception( ["msg" => "No table found", "table" => $tableIn["class"], "connection" => $connName, "parent" => $table->getClass()]);
+                throw new Exception(["msg" => "No table found", "table" => $tableIn["class"], "connection" => $connName, "parent" => $table->getClass()]);
             }
             $additionalConditions = [];
             foreach ($tableIn["conditions"] as $condition) {
                 $additionalConditions[] = ["field" => $condition["field"], "value" => $condition["value"], "condition" => $condition["condition"]];
             }
-            $ct = new ConnectionTable($_table, $tableIn["localField"], $tableIn["foreignField"], $additionalConditions);
+            $ct = new ConnectionElement($_table, $tableIn["localField"], $tableIn["foreignField"], $additionalConditions);
 
-            $connection->tables[] = $ct;
-
+            $elements[] = $ct;
 
         }
+
+        $connection->setElements($elements);
 
         return $connection;
     }
@@ -268,39 +266,31 @@ class YamlSchemaReader
     /**
      * Reads index information and create Index object
      *
-     * @param Table
-     * @param XmlElement
-     *
+     * @param Table $table
+     * @param $indexName
+     * @param $indexData
      * @return Index
-     * @todo Implement
+     * @throws \Arrow\ORM\Schema\SchemaException
      */
-    public function readIndex(Table $table, $node)
+    public function readIndex(Table $table, $indexName, $indexData)
     {
         $index = new Index();
-        $index->setName($node->name);
-        $index->setType(isset($node["type"]) ? $node["type"] : 'BTREE');
+        $index->setName($indexName);
+        $index->setType($indexData["type"]);
 
-        foreach ($node->children() as $tag => $_node) {
-            if ($tag == 'index-field') {
-                $field = $table->getFieldByName($_node["name"]);
-                if ($field == null) {
-                    throw new SchemaException("Field declared in index not finded in table (field: '{$_node["name"]}', table: '{$table->getTableName()}')");
-                } else {
-                    $index->addFieldName($field->getName());
-                }
+
+        foreach ($indexData["columns"] as $_field) {
+
+            $field = $table->getFieldByName($_field["column"]);
+            if ($field == null) {
+                throw new SchemaException("Field declared in index not found in table (field: '{$field}', table: '{$table->getTableName()}')");
+            } else {
+                $index->addFieldName($field->getName(), $_field["size"]);
             }
+
         }
         return $index;
     }
 
-    public function readTracker(Table $table, $node)
-    {
-        return $node["class"];
-    }
-
-    public function readExtension(Table $table, $node)
-    {
-        return $node["class"];
-    }
 
 }
