@@ -170,7 +170,7 @@ class YamlSchemaReaderTest extends \Codeception\Test\Unit
         $this->assertEquals(count($indexes), 1);
         $this->assertEquals($indexes[0]->getName(), "test");
         $this->assertEquals($indexes[0]->getColumns(), [
-            ["column" => "type", "size" => "80"],
+            ["column" => "content", "size" => "5"],
             ["column" => "title", "size" => "40"]
         ]);
         $this->assertEquals($indexes[0]->getType(), "index");

@@ -509,14 +509,17 @@ class MysqlSynchronizer extends AbstractSynchronizer
     private function checkIndexes(Schema $schema, Table $table)
     {
 
+        $mismatches = [];
 
         $query = "SHOW INDEXES  FROM `{$table->getTableName()}`";
         $dsIndexes = $this->query($query)->fetchAll(\PDO::FETCH_ASSOC);
 
 
+        $indexColumns = [];
+
         foreach ($table->getIndexes() as $index) {
 
-            $indexColumns = [];
+
             $indexColumns[$index->getName()] = [];
             foreach ($dsIndexes as $dsIndex) {
 
@@ -528,10 +531,15 @@ class MysqlSynchronizer extends AbstractSynchronizer
             if (count($indexColumns[$index->getName()]) == 0) {
                 $mismatches[] = new SchemaMismatch($schema, $table, $index, SchemaMismatch::NOT_EXISTS);
             }
-            $reduced = array_reduce($index->getColumns(), function($p,$c){ $p[] = $c["column"]; return $p; },[]);
+            $reduced = array_reduce($index->getColumns(), function ($p, $c) {
+                $p[] = $c["column"];
+                return $p;
+            }, []);
             $diff = array_diff($indexColumns[$index->getName()], $reduced);
-            if (count($diff) != 0) {
+            if (count($diff) > 0) {
                 $mismatches[] = new SchemaMismatch($schema, $table, $index, SchemaMismatch::NOT_EQUALS);
+            }else{
+
             }
 
         }
@@ -676,9 +684,10 @@ class MysqlSynchronizer extends AbstractSynchronizer
     {
         $tmp = [];
         foreach ($index->getColumns() as $col) {
-            $tmp[] = "`{$col["column"]}`(${col["size"]})";
+            $tmp[] = "`{$col["column"]}`" . ($col["size"] ? "(${col["size"]})" : "");
+
         }
-        $sql = "ALTER TABLE `{$table->getTableName()}` ADD " . ($index->getType() == "UNIQUE" ? "UNIQUE " : "") . " KEY (" . implode(",", $tmp) . ") USING " . $index->getKind();
+        $sql = "ALTER TABLE `{$table->getTableName()}` ADD " . ($index->getType() == "UNIQUE" ? "UNIQUE " : "") . " KEY `{$index->getName()}`(" . implode(",", $tmp) . ") USING " . $index->getKind();
 
         $this->update($sql);
         return $sql;

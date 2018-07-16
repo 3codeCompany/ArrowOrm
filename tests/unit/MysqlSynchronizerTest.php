@@ -54,15 +54,10 @@ class MysqlSynchronizerTest extends \Codeception\Test\Unit
     public function testSomeFeature()
     {
 
-
         $this->repository->synchronize();
-
         $changes = $this->repository->getMissMatches();
 
-        codecept_debug($this->repository->getMissMatches());
-
         $this->assertEquals(count($this->repository->getMissMatches()), 0);
-
 
 
     }
