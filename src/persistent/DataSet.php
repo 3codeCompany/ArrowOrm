@@ -410,6 +410,14 @@ class DataSet implements \Iterator, \ArrayAccess, \Countable, \Serializable, \Js
         return $tmp;
     }
 
+
+    public function reduce(callable  $callback, $carry = []){
+        foreach ($this as $el) {
+            $carry = $callback( $carry, $el );
+        }
+        return $carry;
+    }
+
     /**
      * Specify data which should be serialized to JSON
      * @link http://php.net/manual/en/jsonserializable.jsonserialize.php
