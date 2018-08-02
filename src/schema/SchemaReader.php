@@ -238,7 +238,7 @@ class SchemaReader implements ISchemaReader
     {
         $field = new Field();
         $field->setName((String)$node["name"]);
-        $field->setOldName((String)$node["oldName"]);
+        //$field->setOldName((String)$node["oldName"]);
         $field->setType((String)$node["type"]);
         $field->setAutoincrement((isset($node["autoIncrement"]) && $node["autoIncrement"] . "" == "true") ? true : false);
         $field->setPKey((isset($node["primaryKey"]) && $node["primaryKey"] . "" == "true") ? true : false);
