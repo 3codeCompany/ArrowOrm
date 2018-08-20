@@ -169,7 +169,7 @@ class MysqlSynchronizer extends AbstractSynchronizer
                 if ($mismatch->type == SchemaMismatch::NOT_EXISTS) {
                     if ($mode == self::MODE_SCHEMA_TO_DS || $mode == self::MODE_ALL) {
                         //creating field on datasource
-                        $sql = $this->createField($mismatch->parentElement, $mismatch->element);
+                        $sql = $this->createField($schema, $mismatch->parentElement, $mismatch->element);
                     } elseif ($mode == self::MODE_DS_TO_SCHEMA) {
                         if (!$this->isPreventRemoveActions()) {
                             //removing field from schema ( table)
@@ -182,14 +182,14 @@ class MysqlSynchronizer extends AbstractSynchronizer
                 }
                 if ($mismatch->type == SchemaMismatch::NOT_EQUALS || $mismatch->type == SchemaMismatch::INDEX_NOT_EQUALS) {
                     if ($mode == self::MODE_SCHEMA_TO_DS || $mode == self::MODE_ALL) {
-                        $sql = $this->updateField($mismatch->parentElement, $mismatch->element);
+                        $sql = $this->updateField($schema, $mismatch->parentElement, $mismatch->element);
                     } elseif ($mode == self::MODE_DS_TO_SCHEMA) {
                         $this->updateFieldFromDs($mismatch->parentElement, $mismatch->element);
                     }
                 }
                 if ($mismatch->type == SchemaMismatch::NAME_NOT_EQUALS) {
                     if ($mode == self::MODE_SCHEMA_TO_DS || $mode == self::MODE_ALL) {
-                        $sql = $this->updateField($mismatch->parentElement, $mismatch->element, true);
+                        $sql = $this->updateField($schema, $mismatch->parentElement, $mismatch->element, true);
                     } elseif ($mode == self::MODE_DS_TO_SCHEMA) {
                         $mismatch->element->setName($mismatch->element->getOldName());
                     }
@@ -378,7 +378,7 @@ class MysqlSynchronizer extends AbstractSynchronizer
                 }
             }
             if (!$exists) {
-                $mismatches[] = new SchemaMismatch($schema, $table, $field, SchemaMismatch::NOT_EXISTS);
+                $mismatches[] = new SchemaMismatch($schema, $table, $field, SchemaMismatch::NOT_EXISTS, ["Field not exists"]);
             }
         }
 
@@ -426,8 +426,9 @@ class MysqlSynchronizer extends AbstractSynchronizer
 
             } else {
 
-                if ($this->checkField($schema, $tableFields[$i], $column) == false) {
-                    $mismatches[] = new SchemaMismatch($schema, $table, $tableFields[$i], SchemaMismatch::NOT_EQUALS);
+                $result = $this->checkField($schema, $table, $tableFields[$i], $column);
+                if ($result !== true) {
+                    $mismatches[] = new SchemaMismatch($schema, $table, $tableFields[$i], SchemaMismatch::NOT_EQUALS, ["info" => $result]);
                 }
             }
 
@@ -440,31 +441,39 @@ class MysqlSynchronizer extends AbstractSynchronizer
     }
 
 
-    private function checkField(Schema $schema, Field $field, $column)
+    private function checkField(Schema $schema, Table $table, Field $field, $column)
     {
 
         $pass = true;
+        $info = "";
 
 
         if ($field->isPKey() && $column["COLUMN_KEY"] != "PRI") {
             $pass = false;
+            $info = "Field isn't primary key";
         }
         if ($field->isAutoincrement() && $column["EXTRA"] != "auto_increment") {
             $pass = false;
+            $info = "Field isn't autoincrement";
         }
         if ($field->getDefault() && $field->getDefault() != $column["COLUMN_DEFAULT"]) {
             if (!($field->getDefault() == "ORM:NOW" && $column["COLUMN_DEFAULT"] == "CURRENT_TIMESTAMP")) {
                 $pass = false;
+            } elseif ($field->getDefault() != "ORM:NOW") {
+                $pass = false;
             }
+            $info = "Field has wrong default value `{$column["COLUMN_DEFAULT"]}` instead `$field->getDefault()`";
         }
 
         //$field->isRequired() - to nie sprawdzenie dla bazy
 
         if ($field->isNullable() && $column["IS_NULLABLE"] != "YES") {
             $pass = false;
+            $info = "Field should be nullable";
         }
         if (!$field->isNullable() && $column["IS_NULLABLE"] != "NO") {
             $pass = false;
+            $info = "Field shouldn't be nullable";
         }
 
 
@@ -475,6 +484,7 @@ class MysqlSynchronizer extends AbstractSynchronizer
                 $size = str_replace(")", "", $tmp[1]);
                 if ($field->getSize() != $size) {
                     $pass = false;
+                    $info = "Field have wrong size `{$size}` instead `{$field->getSize()}``";
                 }
             }
         }
@@ -484,24 +494,43 @@ class MysqlSynchronizer extends AbstractSynchronizer
 
         if ($testType == "text" && !in_array($column["DATA_TYPE"], array("text", "mediumtext", "longtext"))) {
             $pass = false;
+            $info = "Field have wrong type `{$column["DATA_TYPE"]}` instead `{$field->getType()}`";
         } elseif ($testType != "text" && $testType != $column["DATA_TYPE"]) {
             $pass = false;
+            $info = "Field have wrong type `{$column["DATA_TYPE"]}` instead `{$field->getType()}` xxx";
         }
 
         if ($testType == FieldTypes::ENUM) {
             $val = "enum('" . implode("','", array_keys($field->getMetaData()->getOptions())) . "')";
             if ($val != $column["COLUMN_TYPE"]) {
                 $pass = false;
+                $info = "Field have wrong enum type `{$column["COLUMN_TYPE"]}` instead `{$val}`";
             }
 
         }
 
         if ($column["CHARACTER_SET_NAME"]) {
-            if ($column["CHARACTER_SET_NAME"] . " COLLATE " . $column["COLLATION_NAME"] != $schema->getEncoding()) {
+            $tmp = $column["CHARACTER_SET_NAME"] . " COLLATE " . $column["COLLATION_NAME"];
+
+            $encoding = $schema->getEncoding();
+            if ($table->getEncoding()) {
+                $encoding = $table->getEncoding();
+            }
+            if ($field->getEncoding()) {
+                $encoding = $field->getEncoding();
+            }
+
+            $encoding = "utf8 COLLATE {$encoding}";
+
+            if (strtolower($tmp) != strtolower($encoding)) {
                 $pass = false;
+                $info = "Field have wrong character set type `{$tmp}` instead `{$encoding}`";
             }
         }
 
+        if (!$pass) {
+            return $info;
+        }
 
         return $pass;
     }
@@ -538,7 +567,7 @@ class MysqlSynchronizer extends AbstractSynchronizer
             $diff = array_diff($indexColumns[$index->getName()], $reduced);
             if (count($diff) > 0) {
                 $mismatches[] = new SchemaMismatch($schema, $table, $index, SchemaMismatch::NOT_EQUALS);
-            }else{
+            } else {
 
             }
 
@@ -626,7 +655,7 @@ class MysqlSynchronizer extends AbstractSynchronizer
         return $sql;
     }
 
-    private function createField(Table $table, Field $field)
+    private function createField(Schema $schema, Table $table, Field $field)
     {
         $fields = $table->getFields();
         $index = array_search($field, $fields);
@@ -636,14 +665,14 @@ class MysqlSynchronizer extends AbstractSynchronizer
             $prev = "AFTER `{$fields[$index - 1]->getName()}`";
         }
 
-        $sql = $this->getFieldCreationCode($table, $field);
+        $sql = $this->getFieldCreationCode($schema, $table, $field);
         $sql = "ALTER TABLE  `{$table->getTableName()}` ADD  $sql  {$prev}";
         $this->update($sql);
 
         return $sql;
     }
 
-    private function updateField(Table $table, Field $field, $oldName = false)
+    private function updateField(Schema $schema, Table $table, Field $field, $oldName = false)
     {
         $fields = $table->getFields();
         $index = array_search($field, $fields);
@@ -653,7 +682,7 @@ class MysqlSynchronizer extends AbstractSynchronizer
             $prev = "AFTER `{$fields[$index-1]->getName()}`";
         }
 
-        $sql = $this->getFieldCreationCode($table, $field);
+        $sql = $this->getFieldCreationCode($schema, $table, $field);
         $name = $oldName ? $field->getOldName() : $field->getName();
 
         $sql = "ALTER TABLE  `{$table->getTableName()}` CHANGE `{$name}`  $sql  {$prev}";
@@ -667,8 +696,8 @@ class MysqlSynchronizer extends AbstractSynchronizer
                     $sql = str_replace("PRIMARY KEY ", "", $sql);
             }
         }
-        $this->update($sql);
 
+        $this->update($sql);
 
         return $sql;
     }
@@ -713,8 +742,17 @@ class MysqlSynchronizer extends AbstractSynchronizer
     }
 
 
-    private function getFieldCreationCode(Table $table, Field $field)
+    private function getFieldCreationCode(Schema $schema, Table $table, Field $field)
     {
+
+        $encoding = $schema->getEncoding();
+        if ($table->getEncoding()) {
+            $encoding = $table->getEncoding();
+        }
+        if ($field->getEncoding()) {
+            $encoding = $field->getEncoding();
+        }
+
         $sql = "`{$field->getName()}` {$this->translateType($field->getType())}";
 
         if ($field->getType() == FieldTypes::ENUM) {
@@ -724,6 +762,10 @@ class MysqlSynchronizer extends AbstractSynchronizer
 
         if ($field->getSize()) {
             $sql .= "({$field->getSize()})";
+        }
+
+        if (in_array(strtolower($field->getType()), ["varchar", "longvarchar", "text", "char"])) {
+            $sql .= " CHARACTER SET utf8 COLLATE {$encoding}";
         }
 
         if (!$field->isNullable()) {
@@ -737,6 +779,8 @@ class MysqlSynchronizer extends AbstractSynchronizer
         if ($field->isPKey()) {
             $sql .= " PRIMARY KEY";
         }
+
+
 
         if ($field->isRequired()) {
             $sql .= " NOT NULL";

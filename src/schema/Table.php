@@ -92,6 +92,62 @@ class Table implements ISchemaElement, JsonSerializable
 
     private $extensionTo = null;
 
+    private $encoding;
+
+    /**
+     * @return string
+     */
+    public function getTable(): string
+    {
+        return $this->table;
+    }
+
+    /**
+     * @param string $table
+     * @return Table
+     */
+    public function setTable(string $table): Table
+    {
+        $this->table = $table;
+        return $this;
+    }
+
+    /**
+     * @return null
+     */
+    public function getExtensionTo()
+    {
+        return $this->extensionTo;
+    }
+
+    /**
+     * @param null $extensionTo
+     * @return Table
+     */
+    public function setExtensionTo($extensionTo)
+    {
+        $this->extensionTo = $extensionTo;
+        return $this;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getEncoding()
+    {
+        return $this->encoding;
+    }
+
+    /**
+     * @param mixed $encoding
+     * @return Table
+     */
+    public function setEncoding($encoding)
+    {
+        $this->encoding = $encoding;
+        return $this;
+    }
+
     public function setAsExtensionTo($table)
     {
         $this->extensionTo = $table;

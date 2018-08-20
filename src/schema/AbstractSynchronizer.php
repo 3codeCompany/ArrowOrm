@@ -42,7 +42,7 @@ abstract class AbstractSynchronizer
 
     private $ignoreForeignKeys = false;
 
-
+    private $preventRemoveActions = true;
 
 
     /**

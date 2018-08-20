@@ -227,6 +227,10 @@ class DBRepository implements LoggerAwareInterface
     }
 
 
+    /**
+     * @return \Arrow\ORM\Schema\DatasourceMismatch[]
+     * @throws \Arrow\ORM\Schema\SchemaException
+     */
     public function getMissMatches()
     {
         $schemaFiles = ($this->getConfigCallback)();

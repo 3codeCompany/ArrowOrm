@@ -172,7 +172,7 @@ class SchemaReader implements ISchemaReader
      */
     public function readTable(Schema $schema, $node, $namespace)
     {
-        $class =  (string) $node['class'];
+        $class = (string)$node['class'];
 
 
         $table = new Table();
@@ -238,6 +238,7 @@ class SchemaReader implements ISchemaReader
     {
         $field = new Field();
         $field->setName((String)$node["name"]);
+        $field->setEncoding(isset($node["encoding"]) ? $node["encoding"] : false);
         //$field->setOldName((String)$node["oldName"]);
         $field->setType((String)$node["type"]);
         $field->setAutoincrement((isset($node["autoIncrement"]) && $node["autoIncrement"] . "" == "true") ? true : false);
@@ -293,8 +294,8 @@ class SchemaReader implements ISchemaReader
         foreach ($node->table as $tableIn) {
             $table = $schema->getTableByTable((string)$tableIn["name"]);
             $additionalConditions = [];
-            foreach($tableIn->condition as $condition){
-                $additionalConditions[] = ["field" => $condition["field"]."", "value" => $condition["value"].""];
+            foreach ($tableIn->condition as $condition) {
+                $additionalConditions[] = ["field" => $condition["field"] . "", "value" => $condition["value"] . ""];
             }
             $ct = new ConnectionElement($table, (string)$tableIn["local"], (string)$tableIn["foreign"], $additionalConditions);
 

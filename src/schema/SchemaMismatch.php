@@ -37,18 +37,27 @@ class SchemaMismatch extends AbstractMismatch
     public $type;
 
     /**
+     * Additional data
+     *
+     * @var array
+     */
+    public $data;
+
+
+    /**
      * Constructor
      *
      * @param ISchemaElement $parent
      * @param ISchemaElement $element
      * @param int            $type From AbstractMismatch type
      */
-    public function __construct(Schema $schema, ISchemaElement $parent, ISchemaElement $element, $type)
+    public function __construct(Schema $schema, ISchemaElement $parent, ISchemaElement $element, $type, $data)
     {
         $this->schema = $schema;
         $this->parentElement = $parent;
         $this->element = $element;
         $this->type = $type;
+        $this->data = $data;
     }
 
     /**
@@ -72,7 +81,7 @@ class SchemaMismatch extends AbstractMismatch
             $type = "name not equals";
         }
 
-        return "SchemaMismatch: Parent '{$this->parentElement->toString()}', Element '{$this->element->toString()}', type '{$type}'";
+        return "SchemaMismatch: Parent '{$this->parentElement->toString()}', Element '{$this->element->toString()}', type '{$type}' Data: ". implode( ", ", $this->data);
     }
 
     /**

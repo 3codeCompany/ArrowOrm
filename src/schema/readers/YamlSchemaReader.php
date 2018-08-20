@@ -72,7 +72,7 @@ class YamlSchemaReader
                 if (isset($tableData['extension-to'])) {
                     $name = $tableData['extension-to'];
                     $table = $schema->getTableByClass($name);
-                }else{
+                } else {
                     $name = $tableData["table"] ?? null;
                     $table = $schema->getTableByTable($name);
                 }
@@ -80,7 +80,7 @@ class YamlSchemaReader
 
                 if ($tableData["extension-to"] ?? false) {
                     foreach ($tableData["fields"] as $name => $fieldData) {
-                        $field = $this->readField( $name, $fieldData);
+                        $field = $this->readField($name, $fieldData);
                         $table->addField($field);
                     }
                 }
@@ -146,6 +146,8 @@ class YamlSchemaReader
         $table->setClass($object);
 
         $table->setTableName($data['table'] ?? null);
+        $table->setEncoding($data["encoding"] ?? false);
+
         foreach ($data["fields"] as $name => $fieldData) {
             $field = $this->readField($name, $fieldData);
             $table->addField($field);
@@ -182,6 +184,7 @@ class YamlSchemaReader
         $field->setRequired($data["required"] ?? false);
         $field->setDefault($data["default"] ?? false);
         $field->setNullable($data["nullable"] ?? false);
+        $field->setEncoding($data["encoding"] ?? false);
 
 
         if (isset($data["meta"])) {

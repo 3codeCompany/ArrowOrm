@@ -1,6 +1,7 @@
 <?php
 namespace Arrow\ORM\Schema;
 
+use Arrow\ORM\Exception;
 use Codeception\Test\Metadata;
 use JsonSerializable;
 
@@ -79,6 +80,28 @@ class Field implements ISchemaElement, JsonSerializable
      */
     private $metaData = null;
 
+
+    private $encoding;
+
+    /**
+     * @return mixed
+     */
+    public function getEncoding()
+    {
+        return $this->encoding;
+    }
+
+    /**
+     * @param mixed $encoding
+     */
+    public function setEncoding($encoding) : Field
+    {
+        $this->encoding = $encoding;
+        return $this;
+    }
+
+
+
     /**
      * (non-PHPdoc)
      *
@@ -144,6 +167,32 @@ class Field implements ISchemaElement, JsonSerializable
 
     public function setType($type)
     {
+
+        $allowedTypes = [
+            "varchar",
+            "longvarchar",
+            "text",
+            "tinyint",
+            "smallint",
+            "mediumint",
+            "bigint",
+            "int",
+            "date",
+            "datetime",
+            "timestamp",
+            "enum",
+            "varbinary",
+            "double",
+            "float",
+            "char",
+        ];
+
+        if(!in_array(strtolower($type), $allowedTypes)){
+            throw new Exception("Type `{$type}` is not supported" );
+        }
+
+
+
         $this->type = $type;
     }
 

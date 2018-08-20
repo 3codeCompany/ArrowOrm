@@ -38,7 +38,7 @@ class Schema implements JsonSerializable
      */
     private $tables = array();
 
-    private $encoding = "utf8_unicode";
+    private $encoding = "utf8_unicode_ci";
 
 
     public static function fromFiles($files)
