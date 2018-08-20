@@ -195,8 +195,8 @@ class SchemaReader implements ISchemaReader
                     $table->addField($field);
                     break;
                 case 'index':
-                    $field = $this->readIndex($table, $node);
-                    $table->addIndex($field);
+                    //$field = $this->readIndex($table, $node);
+                    //$table->addIndex($field);
                     break;
                 case 'connection':
                     //do nothing we read connection  later
@@ -317,6 +317,7 @@ class SchemaReader implements ISchemaReader
      */
     public function readIndex(Table $table, $node)
     {
+
         $index = new Index();
         $index->setName((string)$node->name);
         $index->setType(isset($node["type"]) ? (string)$node["type"] : 'BTREE');
