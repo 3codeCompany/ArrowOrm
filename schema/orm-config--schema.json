@@ -30,6 +30,10 @@
                     "extension-to": {
                         "type": "string"
                     },
+                    "encoding": {
+                        "type": "string",
+                        "default": "utf8_unicode_ci"
+                    },
                     "fields": {
                         "type": "object",
                         "additionalProperties": {
@@ -58,6 +62,10 @@
                                 },
                                 "nullable": {
                                     "type": "boolean"
+                                },
+                                "encoding": {
+                                    "type": "string",
+                                    "default": "utf8_unicode_ci"
                                 },
                                 "meta": {
                                     "type": "object",
