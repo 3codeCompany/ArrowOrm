@@ -504,6 +504,7 @@ class Criteria
     {
         //\Arrow\Logger::log("[ArrowCriteria] Group by \"{$column}\" added to selection; ",\Arrow\Logger::EL_INFO);
         $this->data['group'][] = $column;
+        $this->aggregates = true;
         return $this;
     }
 
