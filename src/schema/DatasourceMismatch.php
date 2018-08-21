@@ -102,7 +102,7 @@ class DatasourceMismatch extends AbstractMismatch
             $elementType = "foreign key";
         }
 
-        return "DatasourceMismatch: Parent '{$this->parentElement}', ElementType: '{$elementType}', Element '{$this->element}', type '{$type}'";
+        return "DB -> Schema mismatch: Parent '{$this->parentElement}', ElementType: '{$elementType}', Element '{$this->element}', type '{$type}'";
     }
 
     /**

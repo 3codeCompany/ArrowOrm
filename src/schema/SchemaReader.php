@@ -2,6 +2,8 @@
 
 namespace Arrow\ORM\Schema;
 
+use Arrow\ORM\Schema\Readers\YamlSchemaReader;
+
 /**
  * Read schema config file
  *
@@ -41,22 +43,33 @@ class SchemaReader implements ISchemaReader
          * first we have to read whole schema and search for includes
          * its important to  properly read all relations
          */
-        $includeSchema = function ($file) use (&$includeSchema, &$files) {
-            $sxml = simplexml_load_file($file);
-            //<include path="./db-schemas/crm-schema.xml" />
-            $includes = $sxml->xpath('/schema/include');
-            foreach ($includes as $include) {
-                $fileToInclude = dirname($file) . "/" . $include["path"];
-                $files[] = $fileToInclude;
-                $includeSchema($fileToInclude);
+        $includeSchema = function ($file) use (&$includeSchema, $schema,  &$files) {
+
+            if (strpos($file, ".yaml") !== false) {
+
+
+
+            } else {
+                $sxml = simplexml_load_file($file);
+                //<include path="./db-schemas/crm-schema.xml" />
+                $includes = $sxml->xpath('/schema/include');
+                foreach ($includes as $include) {
+                    $fileToInclude = dirname($file) . "/" . $include["path"];
+                    $files[] = $fileToInclude;
+                    $includeSchema($fileToInclude);
+                }
             }
         };
-        foreach ($file as $f) {
+        foreach ($files as $f) {
             $includeSchema($f);
         }
 
 
         foreach ($files as $f) {
+            if (strpos($f, ".yaml") !== false) {
+                continue;
+            }
+
             //load XML file
             $sxml = simplexml_load_file($f);
             $namespace = "";
@@ -81,6 +94,13 @@ class SchemaReader implements ISchemaReader
          * We need loaded whole schema to read f keys and extensions
          */
         foreach ($files as $f) {
+
+
+            if (strpos($f, ".yaml") !== false) {
+                continue;
+            }
+
+
             $sxml = simplexml_load_file($f);
             $tablesSet = $sxml->xpath('/schema/table');
 
@@ -156,6 +176,17 @@ class SchemaReader implements ISchemaReader
                 foreach ($table->getForeignKeys() as $key) {
                     $source->addForeignKey($key);
                 }
+            }
+        }
+
+        foreach ($files as $f) {
+            if (strpos($f, ".yaml") !== false) {
+                /*print "<pre>";
+                print_r($schema);
+                exit();*/
+                $reader = new YamlSchemaReader();
+                $schema = $reader->readSchemaFromFile($f,$schema);
+                continue;
             }
         }
 
@@ -238,7 +269,8 @@ class SchemaReader implements ISchemaReader
     {
         $field = new Field();
         $field->setName((String)$node["name"]);
-        $field->setEncoding(isset($node["encoding"]) ? $node["encoding"] : false);
+        $field->setEncoding("". (isset($node["encoding"]) ? $node["encoding"] : false));
+
         //$field->setOldName((String)$node["oldName"]);
         $field->setType((String)$node["type"]);
         $field->setAutoincrement((isset($node["autoIncrement"]) && $node["autoIncrement"] . "" == "true") ? true : false);

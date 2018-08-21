@@ -81,7 +81,13 @@ class SchemaMismatch extends AbstractMismatch
             $type = "name not equals";
         }
 
-        return "SchemaMismatch: Parent '{$this->parentElement->toString()}', Element '{$this->element->toString()}', type '{$type}' Data: ". implode( ", ", $this->data);
+        if(!is_array($this->data)){
+            debug_print_backtrace();
+            //print_r($this);
+            exit();
+        }
+
+        return "[Schema->DB Mismatch]: Parent '{$this->parentElement->toString()}', Element '{$this->element->toString()}', type '{$type}' Data: ". implode( ", ", $this->data);
     }
 
     /**

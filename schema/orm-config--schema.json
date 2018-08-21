@@ -1,8 +1,10 @@
 {
     "$schema": "http://json-schema.org/draft-07/schema#",
     "type": "object",
-    "required": ["encoding", "objects"],
-    "additionalProperties": false,
+    "required": ["objects"],
+    "additionalProperties": {
+        "encoding": "string"
+    },
     "properties": {
         "encoding": {
             "type": "string",
@@ -43,7 +45,24 @@
                             "properties": {
                                 "type": {
                                     "type": "string",
-                                    "enum": ["int", "varchar", "text", "date", "datetime", "enum" ]
+                                    "enum": [
+                                        "varchar",
+                                        "longvarchar",
+                                        "text",
+                                        "tinyint",
+                                        "smallint",
+                                        "mediumint",
+                                        "bigint",
+                                        "int",
+                                        "date",
+                                        "datetime",
+                                        "timestamp",
+                                        "enum",
+                                        "varbinary",
+                                        "double",
+                                        "float",
+                                        "char"
+                                    ]
                                 },
                                 "primary-key": {
                                     "type": "boolean"
@@ -70,7 +89,6 @@
                                 "meta": {
                                     "type": "object",
                                     "additionalProperties": false,
-
                                     "properties": {
                                         "label": {
                                             "type": "string"
@@ -114,7 +132,6 @@
                                             },
                                             "conditions": {
                                                 "type": "array",
-
                                                 "items": {
                                                     "type": "object",
                                                     "required": ["field", "value"],
@@ -149,24 +166,24 @@
                                     "enum": ["index", "unique", "fulltext"]
                                 },
                                 "kind": {
-                                  "type": "string",
-                                  "enum": ["BTREE", "HASH"]
+                                    "type": "string",
+                                    "enum": ["BTREE", "HASH"]
                                 },
                                 "columns": {
                                     "type": "array",
-                                  "items": {
-                                    "type": "object",
-                                    "additionalProperties": false,
-                                    "required": ["column", "size"],
-                                    "properties": {
-                                      "column": {
-                                        "type": "string"
-                                      },
-                                      "size": {
-                                        "type": "integer"
-                                      }
+                                    "items": {
+                                        "type": "object",
+                                        "additionalProperties": false,
+                                        "required": ["column", "size"],
+                                        "properties": {
+                                            "column": {
+                                                "type": "string"
+                                            },
+                                            "size": {
+                                                "type": "integer"
+                                            }
+                                        }
                                     }
-                                  }
                                 },
                                 "size": {
                                     "type": "integer"

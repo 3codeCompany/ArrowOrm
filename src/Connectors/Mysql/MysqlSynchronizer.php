@@ -91,7 +91,7 @@ class MysqlSynchronizer extends AbstractSynchronizer
             }
             if (!in_array($table->getTableName(), $dbTables)) {
                 //$this->createTable($table,$conn);
-                $mismatches[] = new SchemaMismatch($schema, $table, $table, SchemaMismatch::NOT_EXISTS);
+                $mismatches[] = new SchemaMismatch($schema, $table, $table, SchemaMismatch::NOT_EXISTS, [ "msg" => "Table not exists"]);
             } else {
                 $tmp = $this->checkTableFields($schema, $table);
 
@@ -176,7 +176,7 @@ class MysqlSynchronizer extends AbstractSynchronizer
                             $mismatch->parentElement->deleteField($mismatch->element);
                         } else {
                             $toRemove = "Field: {$mismatch->parentElement}.{$mismatch->element}";
-                            print("Remove prevention is on, cant remove $toRemove\n");
+                            //print("Remove prevention is on, cant remove $toRemove\n");
                         }
                     }
                 }
@@ -215,7 +215,7 @@ class MysqlSynchronizer extends AbstractSynchronizer
                         $sql = $this->deleteTable($mismatch->element);
                     } else {
                         $toRemove = "Table: {$mismatch->element}";
-                        print("Remove prevention is on, cant remove $toRemove\n");
+                        //print("Remove prevention is on, cant remove $toRemove\n");
                     }
                 } elseif ($mode == self::MODE_DS_TO_SCHEMA || $mode == self::MODE_ALL) {
                     $table = $this->createTableFromDs($mismatch->element);
@@ -229,7 +229,7 @@ class MysqlSynchronizer extends AbstractSynchronizer
                         $sql = $this->deleteField($mismatch->parentElement, $mismatch->element);
                     } else {
                         $toRemove = "Field: {$mismatch->parentElement}.{$mismatch->element}";
-                        print("Remove prevention is on, cant remove $toRemove\n");
+                        //print("Remove prevention is on, cant remove $toRemove\n");
                     }
                 } elseif ($mode == self::MODE_DS_TO_SCHEMA || $mode == self::MODE_ALL) {
                     $field = $this->createFieldFromDs($mismatch->parentElement, $mismatch->element);
@@ -378,7 +378,7 @@ class MysqlSynchronizer extends AbstractSynchronizer
                 }
             }
             if (!$exists) {
-                $mismatches[] = new SchemaMismatch($schema, $table, $field, SchemaMismatch::NOT_EXISTS, ["Field not exists"]);
+                $mismatches[] = new SchemaMismatch($schema, $table, $field, SchemaMismatch::NOT_EXISTS, ["msg" => "Field not exists"]);
             }
         }
 
@@ -402,7 +402,7 @@ class MysqlSynchronizer extends AbstractSynchronizer
 
                 if ($exists) {
                     //TODO sprawdzic poprawnosc
-                    $mismatches[] = new SchemaMismatch($schema, $table, $tableFields[$i], SchemaMismatch::NOT_EQUALS);
+                    $mismatches[] = new SchemaMismatch($schema, $table, $tableFields[$i], SchemaMismatch::NOT_EQUALS, ["Column not exists"]);
                 } else {
                     //checks that field exists in schema
                     $exists = false;
@@ -417,7 +417,7 @@ class MysqlSynchronizer extends AbstractSynchronizer
 
 
                     if ($exists) {
-                        $mismatches[] = new SchemaMismatch($schema, $table, $existsField, SchemaMismatch::INDEX_NOT_EQUALS);
+                        $mismatches[] = new SchemaMismatch($schema, $table, $existsField, SchemaMismatch::INDEX_NOT_EQUALS, ["info" => "Nie do końca ogarniam mismatch"]);
                     } else {
                         $mismatches[] = new DatasourceMismatch($schema, $table->getTableName(), $column["COLUMN_NAME"], DatasourceMismatch::ELEMENT_TYPE_FIELD, SchemaMismatch::NOT_EXISTS);
                         $i--;
@@ -462,7 +462,7 @@ class MysqlSynchronizer extends AbstractSynchronizer
             } elseif ($field->getDefault() != "ORM:NOW") {
                 $pass = false;
             }
-            $info = "Field has wrong default value `{$column["COLUMN_DEFAULT"]}` instead `$field->getDefault()`";
+            $info = "Field has wrong default value `{$column["COLUMN_DEFAULT"]}` instead `{$field->getDefault()}`";
         }
 
         //$field->isRequired() - to nie sprawdzenie dla bazy
@@ -545,6 +545,7 @@ class MysqlSynchronizer extends AbstractSynchronizer
 
 
         $indexColumns = [];
+        $schemaIndexesName = [];
 
         foreach ($table->getIndexes() as $index) {
 
@@ -558,7 +559,7 @@ class MysqlSynchronizer extends AbstractSynchronizer
                 }
             }
             if (count($indexColumns[$index->getName()]) == 0) {
-                $mismatches[] = new SchemaMismatch($schema, $table, $index, SchemaMismatch::NOT_EXISTS);
+                $mismatches[] = new SchemaMismatch($schema, $table, $index, SchemaMismatch::NOT_EXISTS, ["info" => "Index not exists"]);
             }
             $reduced = array_reduce($index->getColumns(), function ($p, $c) {
                 $p[] = $c["column"];
@@ -566,7 +567,7 @@ class MysqlSynchronizer extends AbstractSynchronizer
             }, []);
             $diff = array_diff($indexColumns[$index->getName()], $reduced);
             if (count($diff) > 0) {
-                $mismatches[] = new SchemaMismatch($schema, $table, $index, SchemaMismatch::NOT_EQUALS);
+                $mismatches[] = new SchemaMismatch($schema, $table, $index, SchemaMismatch::NOT_EQUALS,  ["Index not equals"]  );
             } else {
 
             }
@@ -584,10 +585,14 @@ class MysqlSynchronizer extends AbstractSynchronizer
                 }
                 if (!$exists) {
                     $mismatches[] = new DatasourceMismatch($schema, $table->getTableName(), $dsIndex["Key_name"], DatasourceMismatch::ELEMENT_TYPE_INDEX, SchemaMismatch::NOT_EXISTS);
+                    //print $dsIndex["Key_name"].PHP_EOL;
+
                 }
 
             }
         }
+
+
 
         return $mismatches;
     }
@@ -640,7 +645,7 @@ class MysqlSynchronizer extends AbstractSynchronizer
                 }
             }
             if (!$exists) {
-                $mismatches[] = new SchemaMismatch($schema, $ds, $table->getTableName(), $dsFKey["name"], AbstractMismatch::NOT_EXISTS);
+                $mismatches[] = new SchemaMismatch($schema,  $table->getTableName(), $dsFKey["name"], AbstractMismatch::NOT_EXISTS, ["msg" => "Index not exists"]);
             }
         }
 

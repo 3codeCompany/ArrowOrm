@@ -27,7 +27,7 @@ class YamlSchemaReader
      *
      * @see ISchemaReader::readSchemaFromFile()
      */
-    public function readSchemaFromFile($file)
+    public function readSchemaFromFile($file, $schema = null)
     {
         if (!is_array($file)) {
             $files = [$file];
@@ -35,7 +35,9 @@ class YamlSchemaReader
             $files = $file;
         }
 
-        $schema = new Schema();
+        if ($schema === null) {
+            $schema = new Schema();
+        }
 
 
         foreach ($files as $f) {
@@ -43,7 +45,9 @@ class YamlSchemaReader
 
             $data = Yaml::parseFile($f);
 
-            $schema->setEncoding($data["encoding"]);
+            if(isset($data["encoding"])) {
+                $schema->setEncoding($data["encoding"]);
+            }
 
             foreach ($data["objects"] as $object => $tableData) {
                 //disable table node from reading
@@ -252,8 +256,10 @@ class YamlSchemaReader
                 throw new Exception(["msg" => "No table found", "table" => $tableIn["class"], "connection" => $connName, "parent" => $table->getClass()]);
             }
             $additionalConditions = [];
-            foreach ($tableIn["conditions"] as $condition) {
-                $additionalConditions[] = ["field" => $condition["field"], "value" => $condition["value"], "condition" => $condition["condition"]];
+            if(isset($tableIn["conditions"])) {
+                foreach ($tableIn["conditions"] as $condition) {
+                    $additionalConditions[] = ["field" => $condition["field"], "value" => $condition["value"], "condition" => $condition["condition"]];
+                }
             }
             $ct = new ConnectionElement($_table, $tableIn["localField"], $tableIn["foreignField"], $additionalConditions);
 
@@ -279,16 +285,17 @@ class YamlSchemaReader
     {
         $index = new Index();
         $index->setName($indexName);
-        $index->setType($indexData["type"]);
+        $index->setType(  $indexData["type"] ?? "index" );
 
 
         foreach ($indexData["columns"] as $_field) {
+
 
             $field = $table->getFieldByName($_field["column"]);
             if ($field == null) {
                 throw new SchemaException("Field declared in index not found in table (field: '{$field}', table: '{$table->getTableName()}')");
             } else {
-                $index->addFieldName($field->getName(), $_field["size"]);
+                $index->addFieldName($field->getName(), $_field["size"] ?? $field->getSize());
             }
 
         }
