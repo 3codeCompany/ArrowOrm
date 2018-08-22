@@ -37,6 +37,9 @@ class MysqlDBInterface implements DBInterface
      */
     private $connection;
 
+    /** @var LoggerInterface */
+    private $logger;
+
 
     public function __construct($connection)
     {
@@ -194,6 +197,12 @@ class MysqlDBInterface implements DBInterface
         if (isset($_REQUEST["arrTest"])) {
             print $query . "<br />";
         }
+
+        if ($this->logger) {
+            $this->logger->info($query);
+        }
+
+
 
         return $this->connection->exec($query);
 
