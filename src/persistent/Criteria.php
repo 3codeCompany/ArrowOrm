@@ -347,10 +347,11 @@ class Criteria
      * @param $column
      * @param $value
      * @param $condition
+     * @param $isHaving
      *
      * @return
      */
-    public function addCondition($column, $value, $condition = self::C_EQUAL, $function = null, $functionData = array())
+    public function addCondition($column, $value, $condition = self::C_EQUAL)
     {
         if ($condition == self::END) {
             $this->firstlast = true;
@@ -373,8 +374,8 @@ class Criteria
             'column' => $column,
             'value' => $value,
             'condition' => $condition,
-            'function' => $function,
-            'functionData' => $functionData
+            //'function' => $function,
+            //'functionData' => $functionData
         ];
 
         if ($condition == self::START) {
