@@ -203,7 +203,6 @@ class MysqlDBInterface implements DBInterface
         }
 
 
-
         return $this->connection->exec($query);
 
     }
@@ -274,7 +273,7 @@ class MysqlDBInterface implements DBInterface
      *
      * @return String
      */
-    public function conditionsToSQL(Criteria $criteria, $aliases = array())
+    public function conditionsToSQL(Criteria $criteria)
     {
 
 
@@ -292,6 +291,7 @@ class MysqlDBInterface implements DBInterface
         if (isset($criteriaData['conditions'])) {
             foreach ($criteriaData['conditions'] as $cond) {
 
+
                 $conditionString .= "\n\t";
 
                 /*if(empty($cond["column"]))
@@ -301,6 +301,7 @@ class MysqlDBInterface implements DBInterface
                     $conditionString .= " $cond ";
                     continue;
                 }
+
 
                 $condition = $cond['condition'];
 
@@ -678,6 +679,7 @@ class MysqlDBInterface implements DBInterface
         $query = str_replace("{limit}", $this->limitToSql($criteria), $query);
 
 
+        $query = preg_replace("/\`(.+?)`\.`(.+?)\`/", "$1.$2", $query);
         $query = preg_replace("/\`(.+?)\.(.+?)\`/", "$1.$2", $query);
 
         /*{conditions}
