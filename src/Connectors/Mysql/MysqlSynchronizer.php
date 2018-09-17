@@ -333,7 +333,7 @@ class MysqlSynchronizer extends AbstractSynchronizer
         $sql = "CREATE TABLE {$table->getTableName()}(";
         $count = count($table->getFields());
         foreach ($table->getFields() as $index => $field) {
-            $sql .= $this->getFieldCreationCode($table, $field);
+            $sql .= $this->getFieldCreationCode($schema, $table, $field);
             if ($index + 1 < $count) {
                 $sql .= ",\n";
             }
