@@ -145,16 +145,6 @@ class PersistentObject extends BaseTracker implements \ArrayAccess, \JsonSeriali
                     return $this->virtualFields[$field]["getter"]($field, $this);
                 }
 
-                if ($this->joinedDataMode == JoinedDataSet::MODE_FLATTEN) {
-                    if (strpos($field, ":") !== false) {
-                        foreach ($this->joinedData as $key => $val) {
-                            //todo przemyslec strategie dopasowana pola do bazy aby ograniczyc dlugosc indexow ktore trzeba podac
-                            if (strpos($key, $field) !== false) {
-                                return $val;
-                            }
-                        }
-                    }
-                }
 
                 //todo for join changes
                 if (array_key_exists($field, $this->data)) {
