@@ -57,7 +57,7 @@ class BaseDomainClassGenerator implements ISchemaTransformer
      *
      * @return string
      */
-    private function generateClass(Table $table)
+    public function generateClass(Table $table)
     {
         $namespace = str_replace("\\", "_", $table->getNamespace());
         $className = "ORM" . ($namespace ? "_" . $namespace : "") . "_{$table->getClassName()}";

@@ -181,8 +181,8 @@ class Table implements ISchemaElement, JsonSerializable
 
     public function getClass()
     {
-        if($this->class && $this->class[0] != "\\")
-            return "\\".$this->class;
+        if ($this->class && $this->class[0] != "\\")
+            return "\\" . $this->class;
 
         return $this->class;
     }
