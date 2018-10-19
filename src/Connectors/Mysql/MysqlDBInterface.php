@@ -658,6 +658,17 @@ class MysqlDBInterface implements DBInterface
         return new MysqlSynchronizer($this->connection);
     }
 
+    public function getQueryParts(Criteria $criteria){
+        $criteriaData = $criteria->getData();
+        $columns = implode(",", array_keys($criteriaData["columns"]));
+        return [
+            "columns" => $columns,
+            "conditions" => $this->conditionsToSQL($criteria),
+            "order" => $this->orderToSql("", $criteria),
+            "limit" => $this->limitToSql($criteria)
+        ];
+    }
+
     public function applyCriteriaToQuery($query, Criteria $criteria): string
     {
         /*print_r($query);
