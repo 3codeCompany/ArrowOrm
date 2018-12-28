@@ -338,7 +338,7 @@ class MysqlSynchronizer extends AbstractSynchronizer
                 $sql .= ",\n";
             }
         }
-        $sql .= ") ENGINE=InnoDB DEFAULT CHARSET=" . $schema->getEncoding();
+        $sql .= ") ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE " . $schema->getEncoding();
 
         $this->update($sql);
         return $sql;
