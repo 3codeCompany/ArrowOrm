@@ -16,13 +16,12 @@ use Arrow\ORM\Extensions\TreeNode;
 class PersistentObject extends BaseTracker implements \ArrayAccess, \JsonSerializable
 {
 
-    protected $virtualFields = [];
-    protected $data = [];
-    protected $parameters = [];
-    protected $joinedData = [];
+    protected $data = array();
+    protected $parameters = array();
+    protected $joinedData = array();
     protected $joinedDataMode = null;
 
-    protected $changedData = [];
+    protected $changedData = array();
     protected $modified = false;
 
     public function fastDataLoad($data)
@@ -163,21 +162,12 @@ class PersistentObject extends BaseTracker implements \ArrayAccess, \JsonSeriali
         return $this->data;
     }
 
-    public function addVirtualField($field, $getter, $setter)
-    {
-        $this->virtualFields[$field] = ["getter" => $getter, "setter" => $setter];
-    }
-
     public function setValue($field, $value, $strict = true)
     {
         if (!in_array($field, static::$fields) && $strict == true) {
-            if (isset($this->virtualFields[$field])) {
-                $this->virtualFields[$field]["setter"]($value);
-                return;
-            }
             throw new Exception(array("msg" => "[PersistentObject] Field not exists " . static::$class . "['{$field}']", "class" => get_class($this), "field" => $field));
         }
-        if (isset($this->data[$field]) && $this->data[$field] !== $value) {
+        if (isset($this->data[$field]) && $this->data[$field] != $value) {
             $this->changedData[$field] = $this->data[$field];
             $this->data[$field] = $value;
             $this->fieldModified($this, $field, $this->changedData[$field], $value);
@@ -199,12 +189,12 @@ class PersistentObject extends BaseTracker implements \ArrayAccess, \JsonSeriali
         return $this;
     }
 
-    public function setValues($values)
+    public function setValues($values, $tmp = false)
     {
         foreach ($values as $key => $value) {
             //we dont save parameters
-            if ($key !== "__parameters") {
-                $this->setValue($key, $value);
+            if($key !== "__parameters") {
+                $this->setValue($key, $value, $tmp);
             }
         }
         return $this;
@@ -501,21 +491,12 @@ class PersistentObject extends BaseTracker implements \ArrayAccess, \JsonSeriali
      */
     function jsonSerialize()
     {
-        $toSerialize = $this->data;
         $parameters = $this->getParameters();
         if ($parameters) {
-            $toSerialize = array_merge($toSerialize, ["__parameters" => $parameters]);
+            return array_merge($this->data, ["__parameters" => $parameters]);
         }
 
-        if (!empty($this->virtualFields)) {
-            $array = [];
-            foreach ($this->virtualFields as $field => $accessors) {
-                $array[$field] = $accessors["getter"]($field, $this);
-            }
-            $toSerialize = array_merge($toSerialize, $array);
-        }
-
-        return $toSerialize;
+        return $this->data;
     }
 
 

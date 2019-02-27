@@ -54,13 +54,12 @@ class PersistentFactory
 
     public static function save(PersistentObject $object, $fireSaveEvents = true, $forceCreate = false)
     {
-
         if ($object->getPKey() !== null && !$object->isModified()) {
             return false;
         }
 
         $pk = $object::getPKField();
-        if ($object->getPKey() !== null && !$forceCreate) { // object already in DB
+        if ($object->getPKey() !== null && !$forceCreate) { // object already in DB 
             //before save event
             if ($fireSaveEvents) {
                 self::dispatchEvent('beforeObjectSave', $object);
@@ -76,7 +75,7 @@ class PersistentFactory
                 if(strpos($key,":") !== false)
                     unset($data[$key]);
             }
-
+             
             DB::getDB()->update($data, $criteria);
 
             //after save event

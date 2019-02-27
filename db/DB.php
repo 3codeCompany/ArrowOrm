@@ -203,7 +203,6 @@ class DB implements LoggerAwareInterface
         $query = $type::select($class::getTable(), $criteria);
 
         $res = $this->query($query);
-        //return new DataSet($class, $res, $criteria, $asSimpleData);
         return new DataSet($class::getClass(), $res, $criteria, $asSimpleData);
 
     }
