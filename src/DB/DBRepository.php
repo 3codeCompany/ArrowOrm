@@ -23,7 +23,7 @@ use Arrow\ORM\Schema\Schema;
 use Arrow\ORM\Schema\SchemaReader;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
-use Psr\Log\LogLevel;
+use Symfony\Component\Cache\Adapter\AbstractAdapter;
 
 /**
  * Interfaces OrmPersistent with specific DB handling classes
@@ -121,6 +121,10 @@ class DBRepository implements LoggerAwareInterface
     protected $dbInterface;
     protected $connection;
     private $connectionInterface;
+    /**
+     * @var AbstractAdapter
+     */
+    private $cacheAdapter;
 
     public function __construct(
         DBInterface $dbInferface,
@@ -358,6 +362,21 @@ class DBRepository implements LoggerAwareInterface
     {
         $this->logLevel = $logLevel;
     }
+
+    public function setCacheSystem(AbstractAdapter $adapter)
+    {
+        $this->cacheAdapter = $adapter;
+        return $this;
+    }
+
+    /**
+     * @return AbstractAdapter
+     */
+    public function getCacheAdapter()
+    {
+        return $this->cacheAdapter;
+    }
+
 
 
 }

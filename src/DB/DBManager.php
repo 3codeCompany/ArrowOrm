@@ -13,7 +13,7 @@ class DBManager
 {
 
     /**
-     * @var DbRepository[]
+     * @var DBRepository[]
      */
     protected static $repositories;
     /**

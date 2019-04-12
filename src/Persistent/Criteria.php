@@ -15,8 +15,8 @@
 
 use Arrow\ORM\DB\DB;
 use Arrow\ORM\DB\DBManager;
-use Arrow\ORM\DB\DBRepository;
 use Arrow\ORM\Exception;
+use Symfony\Component\Cache\Adapter\TagAwareAdapter;
 
 /**
  * Delivers API for selecting rows.
@@ -100,6 +100,11 @@ class Criteria
     protected $mainModel;
     protected $mainModelFields = [];
     protected $mainModelPKField;
+    /**
+     * Cache config [ id, timeout ]
+     * @var array
+     */
+    private $cacheConfig = null;
 
 
     /**
@@ -298,6 +303,13 @@ class Criteria
         return $tmp;
     }
 
+    public function setCacheConfig($id, $timeout, $callback = null, $tags = [])
+    {
+        $this->cacheConfig = [$id, $timeout, $callback, $tags];
+        return $this;
+    }
+
+
     /**
      * @param bool $fieldAsIndex If no $fieldToIndex specyfied used Pkey
      * @param bool $fieldToIndex
@@ -306,24 +318,56 @@ class Criteria
      */
     public function find($fieldAsIndex = false, $fieldToIndex = null)
     {
-        $result = PersistentFactory::getByCriteria($this);
 
-        if (!$fieldAsIndex) {
-            return $result;
+        $item = null;
+        $adapter = null;
+        if ($this->cacheConfig !== null) {
+            $adapter = new TagAwareAdapter(DBManager::getDefaultRepository()->getCacheAdapter());
+            if ($adapter === null) {
+                throw new Exception("No cache adapter specified");
+            }
+            $item = $adapter->getItem($this->cacheConfig[0]);
+            $item->tag($this->cacheConfig[3]);
+            $item->expiresAfter($this->cacheConfig[1]);
+
+
+        }
+
+        if ($item !== null && $item->isHit()) {
+            $result = $item->get();
         } else {
-            $tmp = array();
-            if ($fieldToIndex == null) {
-                foreach ($result as $r) {
-                    $tmp[$r->getPKey()] = $r;
+            if ($this->cacheConfig !== null) {
+                print "pobieram";
+            }
+            $result = PersistentFactory::getByCriteria($this);
+
+            if ($fieldAsIndex) {
+                $tmp = array();
+                if ($fieldToIndex == null) {
+                    foreach ($result as $r) {
+                        $tmp[$r->getPKey()] = $r;
+                    }
+                } else {
+                    foreach ($result as $r) {
+                        $tmp[$r[$fieldToIndex]] = $r;
+                    }
                 }
-            } else {
-                foreach ($result as $r) {
-                    $tmp[$r[$fieldToIndex]] = $r;
-                }
+
+                $result = $tmp;
             }
 
-            return $tmp;
+            if ($item) {
+                if ($this->cacheConfig[2]) {
+                    $item->set($this->cacheConfig[2]($result));
+                } else {
+                    $item->set($result->toArray());
+                }
+                $adapter->save($item);
+            }
         }
+
+        return $result;
+
     }
 
 
@@ -410,7 +454,7 @@ class Criteria
      * Custom condition (in pure SQL)
      *
      * @param string $value - condition
-     * @param        array  (string) - tables which are in condition
+     * @param array  (string) - tables which are in condition
      *
      * @return
      */
