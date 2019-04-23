@@ -12,7 +12,8 @@ namespace Arrow\ORM\Extensions;
 use Arrow\ORM\Persistent\Criteria;
 use Arrow\ORM\Persistent\PersistentFactory;
 
-trait TreeNode {
+trait TreeNode
+{
 
     public static $EXTENSION_TREE_PARENT_ID = "parent_id";
     public static $EXTENSION_TREE_PARENT_DEPTH = "depth";
@@ -28,8 +29,8 @@ trait TreeNode {
 
         if ($root == null) {
             $root = $class::create([
-                "name"      => "Root",
-                "depth"     => 0,
+                "name" => "Root",
+                "depth" => 0,
                 "parent_id" => 0
             ]);
 
@@ -65,10 +66,10 @@ trait TreeNode {
         $prev = Criteria::query($class)
             ->c(self::$EXTENSION_TREE_SORT, $thisSort, Criteria::C_LESS_THAN)
             ->order(self::$EXTENSION_TREE_SORT, Criteria::O_DESC)
-            ->c(self::$EXTENSION_TREE_PARENT_DEPTH, $this[self::$EXTENSION_TREE_PARENT_DEPTH] )
-            ->c(self::$EXTENSION_TREE_PARENT_ID, $this[self::$EXTENSION_TREE_PARENT_ID] )
+            ->c(self::$EXTENSION_TREE_PARENT_DEPTH, $this[self::$EXTENSION_TREE_PARENT_DEPTH])
+            ->c(self::$EXTENSION_TREE_PARENT_ID, $this[self::$EXTENSION_TREE_PARENT_ID])
             ->findFirst();
-        if(!$prev)
+        if (!$prev)
             return;
 
         $prevSort = $prev[self::$EXTENSION_TREE_SORT];
@@ -89,10 +90,10 @@ trait TreeNode {
         $prev = Criteria::query($class)
             ->c(self::$EXTENSION_TREE_SORT, $thisSort, Criteria::C_GREATER_THAN)
             ->order(self::$EXTENSION_TREE_SORT, Criteria::O_ASC)
-            ->c(self::$EXTENSION_TREE_PARENT_DEPTH, $this[self::$EXTENSION_TREE_PARENT_DEPTH] )
-            ->c(self::$EXTENSION_TREE_PARENT_ID, $this[self::$EXTENSION_TREE_PARENT_ID] )
+            ->c(self::$EXTENSION_TREE_PARENT_DEPTH, $this[self::$EXTENSION_TREE_PARENT_DEPTH])
+            ->c(self::$EXTENSION_TREE_PARENT_ID, $this[self::$EXTENSION_TREE_PARENT_ID])
             ->findFirst();
-        if(!$prev)
+        if (!$prev)
             return;
 
         $prevSort = $prev[self::$EXTENSION_TREE_SORT];
@@ -104,8 +105,6 @@ trait TreeNode {
         $this->save();
         return $this;
     }
-
-
 
 
     public function getParent()
@@ -132,12 +131,20 @@ trait TreeNode {
         return $criteria->find();
     }
 
-    public function getAllChildren($idOnly = false)
+    public function getAllChildren($idOnly = false, $columns = [])
     {
         $tmp = array();
-        $children = Criteria::query(self::getClass())->c(self::$EXTENSION_TREE_PARENT_ID, $this->data['id'])->order(self::$EXTENSION_TREE_SORT)->find();
+        $crit = Criteria::query(self::getClass())
+            ->c(self::$EXTENSION_TREE_PARENT_ID, $this->data['id'])
+            ->order(self::$EXTENSION_TREE_SORT);
+
+        if (!empty($columns)) {
+            $crit->setColumns($columns);
+        }
+
+        $children = $crit->find();
         foreach ($children as $child) {
-            $tmp = array_merge($tmp, array($idOnly ? $child->getPKey() : $child), $child->getAllChildren($idOnly));
+            $tmp = array_merge($tmp, array($idOnly ? $child->getPKey() : $child), $child->getAllChildren($idOnly, $columns));
         }
 
         return $tmp;
