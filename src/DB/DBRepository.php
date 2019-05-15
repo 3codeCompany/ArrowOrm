@@ -24,6 +24,7 @@ use Arrow\ORM\Schema\SchemaReader;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Cache\Adapter\AbstractAdapter;
+use Symfony\Component\Cache\Adapter\TagAwareAdapter;
 
 /**
  * Interfaces OrmPersistent with specific DB handling classes
@@ -363,7 +364,7 @@ class DBRepository implements LoggerAwareInterface
         $this->logLevel = $logLevel;
     }
 
-    public function setCacheSystem(AbstractAdapter $adapter)
+    public function setCacheSystem(TagAwareAdapter $adapter)
     {
         $this->cacheAdapter = $adapter;
         return $this;

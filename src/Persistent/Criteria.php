@@ -322,7 +322,7 @@ class Criteria
         $item = null;
         $adapter = null;
         if ($this->cacheConfig !== null) {
-            $adapter = new TagAwareAdapter(DBManager::getDefaultRepository()->getCacheAdapter());
+            $adapter = DBManager::getDefaultRepository()->getCacheAdapter();
             if ($adapter === null) {
                 throw new Exception("No cache adapter specified");
             }
