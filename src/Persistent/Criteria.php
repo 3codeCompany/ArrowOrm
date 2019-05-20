@@ -278,6 +278,10 @@ class Criteria
 
     public function findAsFieldArray($field, $fieldToIndex = null)
     {
+        if($this->cacheConfig){
+            throw new Exception("'findAsFieldArray' Not implemented with cache");
+        }
+
         $class = $this->mainModel;
         $columns = [$field];
         if ($fieldToIndex && $fieldToIndex !== true) {
@@ -286,18 +290,26 @@ class Criteria
 
         $this->setColumns($columns);
         $result = $this->find();
+
+        //print_r($result);
+        //exit();
         //Włączyć po ujednoliceniu
         //$result->setCacheEnabled(false);
-        $tmp = array();
-        while ($row = $result->fetch()) {
-            if ($fieldToIndex) {
-                if ($fieldToIndex === true) {
-                    $tmp[$row->getPKey()] = $row[$field];
+        $tmp = [];
+        //cached
+        if(is_array($result) ){
+            return $result;
+        }else {
+            while ($row = $result->fetch()) {
+                if ($fieldToIndex) {
+                    if ($fieldToIndex === true) {
+                        $tmp[$row->getPKey()] = $row[$field];
+                    } else {
+                        $tmp[$row[$fieldToIndex]] = $row[$field];
+                    }
                 } else {
-                    $tmp[$row[$fieldToIndex]] = $row[$field];
+                    $tmp[] = $row[$field];
                 }
-            } else {
-                $tmp[] = $row[$field];
             }
         }
         return $tmp;
@@ -337,7 +349,7 @@ class Criteria
             $result = $item->get();
         } else {
             if ($this->cacheConfig !== null) {
-                print "pobieram";
+                //print "pobieram";
             }
             $result = PersistentFactory::getByCriteria($this);
 
@@ -358,9 +370,11 @@ class Criteria
 
             if ($item) {
                 if ($this->cacheConfig[2]) {
-                    $item->set($this->cacheConfig[2]($result));
+                    $result = $this->cacheConfig[2]($result);
+                    $item->set($result);
                 } else {
-                    $item->set($result->toArray());
+                    $result = $result->toArray();
+                    $item->set($result);
                 }
                 $adapter->save($item);
             }
