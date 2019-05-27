@@ -1,0 +1,134 @@
+encoding: utf8 COLLATE utf8_unicode_ci
+objects:
+
+    ORM\Tests\Objects\Post:
+        table: orm_posts
+        fields:
+            id:
+                type: int
+                primary-key: true
+                auto-increment: true
+                size: 11
+                meta:
+                    label: ID
+            created:
+                type: datetime
+                default: ORM:NOW
+
+            date:
+                type: date
+
+            user_id:
+                type: int
+                size: 11
+                meta:
+                    label: User conn
+                required: true
+            type:
+                type: enum
+                default: 1
+                meta:
+                    label: Type
+                    options:
+                        1: Standard
+                        2: Important
+                        3: Very important
+
+            title:
+                type: varchar
+                size: 500
+                required: true
+
+            content:
+                type: text
+                nullable: true
+
+
+        connections:
+            user:
+                useDBFKeys: false
+                path:
+                -   class: ORM\Tests\Objects\User
+                    localField: user_id
+                    foreignField: id
+                    conditions:
+                    -   field: id
+                        value: 5
+                        condition: ==
+
+
+
+
+
+
+        indexes:
+            test:
+                columns:
+                    -
+                        column: content
+                        size: 5
+                    -
+                        column: title
+                        size: 40
+
+                type: index
+
+    ORM\Tests\Objects\User:
+        table: orm_users
+        fields:
+            id:
+                type: int
+                auto-increment: true
+                primary-key: true
+
+            created:
+                type: datetime
+                default: ORM:NOW
+
+            login:
+                type: varchar
+                size: 500
+                required: true
+            password:
+                type: varchar
+                size: 32
+                required: true
+
+            email:
+                type: varchar
+                size: 500
+                required: true
+
+            name:
+                type: varchar
+                size: 100
+            age:
+                type: int
+                size: 2
+
+
+
+    ORM\Tests\Objects\Contractor:
+        extension-to: ORM\Tests\Objects\User
+        fields:
+            company_name:
+                type: varchar
+                size: 100
+                required: true
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

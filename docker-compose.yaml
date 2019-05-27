@@ -1,0 +1,57 @@
+version: '3'
+
+services:
+
+    web:
+
+        build:
+
+            context: .
+            dockerfile: build/php-service.yaml
+
+        sysctls:
+            net.ipv4.ip_unprivileged_port_start: 0
+
+
+        ports:
+        - "80:80"
+        - "443:443"
+        volumes:
+        - .:/var/www/html/
+        container_name: orm_php
+        environment:
+            DATABASE_URL: mysql:dbname=orm;host=mysql
+            DATABASE_USER: root
+            DATABASE_PASSWORD: secret
+            APACHE_RUN_USER: #1000
+            APACHE_RUN_GROUP: #1000
+
+
+
+
+
+    mysql:
+        image: mysql:5.7
+        command: mysqld --sql_mode=""
+        ports:
+        - 3306:3306
+        #volumes:
+        #- ./dump.sql:/docker-entrypoint-initdb.d/dump.sql
+        container_name: orm_mysql
+        environment:
+            MYSQL_ROOT_PASSWORD: secret
+            MYSQL_DATABASE: orm
+            MYSQL_USER: orm
+            MYSQL_PASSWORD: secret_pass
+
+    phpmyadmin:
+        image: phpmyadmin/phpmyadmin:latest
+        container_name: orm_phpmyadmin
+        ports:
+        - "81:80"
+        environment:
+            PMA_HOST: mysql
+            PMA_USER: root
+            PMA_PASSWORD: secret
+
+

@@ -1,0 +1,198 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "required": ["objects"],
+    "additionalProperties": {
+        "encoding": "string"
+    },
+    "properties": {
+        "encoding": {
+            "type": "string",
+            "description": "Db tables/fields encoding",
+            "default": "utf8_unicode_ci"
+        },
+        "objects": {
+            "type": "object",
+            "description": "List of schema objects",
+            "additionalProperties": {
+                "type": "object",
+                "oneOf": [
+                    {
+                        "required": ["table", "fields"]
+                    },
+                    {
+                        "required": ["extension-to"]
+                    }
+                ],
+                "additionalProperties": false,
+                "properties": {
+                    "table": {
+                        "type": "string"
+                    },
+                    "extension-to": {
+                        "type": "string"
+                    },
+                    "encoding": {
+                        "type": "string",
+                        "default": "utf8_unicode_ci"
+                    },
+                    "fields": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "object",
+                            "required": ["type"],
+                            "additionalProperties": false,
+                            "properties": {
+                                "type": {
+                                    "type": "string",
+                                    "enum": [
+                                        "varchar",
+                                        "longvarchar",
+                                        "text",
+                                        "tinyint",
+                                        "smallint",
+                                        "mediumint",
+                                        "bigint",
+                                        "int",
+                                        "date",
+                                        "datetime",
+                                        "timestamp",
+                                        "enum",
+                                        "varbinary",
+                                        "double",
+                                        "float",
+                                        "char"
+                                    ]
+                                },
+                                "primary-key": {
+                                    "type": "boolean"
+                                },
+                                "auto-increment": {
+                                    "type": "boolean"
+                                },
+                                "default": {
+                                    "type": "string"
+                                },
+                                "size": {
+                                    "type": "integer"
+                                },
+                                "required": {
+                                    "type": "boolean"
+                                },
+                                "nullable": {
+                                    "type": "boolean"
+                                },
+                                "encoding": {
+                                    "type": "string",
+                                    "default": "utf8_unicode_ci"
+                                },
+                                "meta": {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                        "label": {
+                                            "type": "string"
+                                        },
+                                        "options": {
+                                            "type": "object",
+                                            "additionalProperties": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "connections": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "object",
+                            "required": ["useDBFKeys", "path"],
+                            "additionalProperties": false,
+                            "properties": {
+                                "useDBFKeys": {
+                                    "type": "boolean"
+                                },
+                                "path": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "required": ["localField", "foreignField"],
+                                        "additionalProperties": false,
+                                        "properties": {
+                                            "class": {
+                                                "type": "string"
+                                            },
+                                            "localField": {
+                                                "type": "string"
+                                            },
+                                            "foreignField": {
+                                                "type": "string"
+                                            },
+                                            "conditions": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "object",
+                                                    "required": ["field", "value"],
+                                                    "additionalProperties": false,
+                                                    "properties": {
+                                                        "field": {
+                                                            "type": "string"
+                                                        },
+                                                        "value": {
+                                                            "type": "string"
+                                                        },
+                                                        "condition": {
+                                                            "type": "string"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "indexes": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "object",
+                            "required": ["type", "columns"],
+                            "properties": {
+                                "type": {
+                                    "type": "string",
+                                    "enum": ["index", "unique", "fulltext"]
+                                },
+                                "kind": {
+                                    "type": "string",
+                                    "enum": ["BTREE", "HASH"]
+                                },
+                                "columns": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "additionalProperties": false,
+                                        "required": ["column", "size"],
+                                        "properties": {
+                                            "column": {
+                                                "type": "string"
+                                            },
+                                            "size": {
+                                                "type": "integer"
+                                            }
+                                        }
+                                    }
+                                },
+                                "size": {
+                                    "type": "integer"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

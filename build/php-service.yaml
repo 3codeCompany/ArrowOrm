@@ -1,0 +1,29 @@
+FROM php:7.2.7-apache
+
+
+RUN docker-php-ext-install pdo pdo_mysql
+
+RUN apt-get update && apt-get install -y libpq-dev && docker-php-ext-install pdo pdo_pgsql
+
+
+RUN chmod -R 777 /var/run/apache2/
+RUN chown -R ${user}:${group} /var/run/apache2/
+
+
+
+ENV USER_HOME /home/artur
+
+ARG user=artur
+ARG group=artur
+ARG uid=1000
+ARG gid=1000
+
+
+RUN mkdir ${USER_HOME}
+RUN groupadd -g ${gid} ${group}
+RUN useradd -d "$USER_HOME" -u ${uid} -g ${gid} -m -s /bin/bash ${user}
+RUN chmod -R 700 ${USER_HOME}
+RUN chown -R ${user}:${group} ${USER_HOME}
+USER ${user}
+
+
