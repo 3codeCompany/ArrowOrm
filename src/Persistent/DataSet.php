@@ -188,12 +188,9 @@ class DataSet implements \Iterator, \ArrayAccess, \Countable, \Serializable, \Js
         return $this->mappedArray;
     }
 
-<<<<<<< HEAD:persistent/DataSet.php
+
     public function toPureArray()
     {
-=======
-    public function toPureArray( ){
->>>>>>> RepositoriesChanges:src/Persistent/DataSet.php
         return $this->toArray(self::AS_ARRAY);
     }
 
@@ -398,19 +395,18 @@ class DataSet implements \Iterator, \ArrayAccess, \Countable, \Serializable, \Js
     }
 
 
-
-
     public function delete()
     {
         foreach ($this as $el) {
             $el->delete();
         }
-<<<<<<< HEAD:persistent/DataSet.php
-=======
+
+
     }
 
 
-    public function map(callable  $callback){
+    public function map(callable $callback)
+    {
         $tmp = [];
         foreach ($this as $el) {
             $tmp[] = $callback($el);
@@ -419,12 +415,13 @@ class DataSet implements \Iterator, \ArrayAccess, \Countable, \Serializable, \Js
     }
 
 
-    public function reduce(callable  $callback, $carry = []){
+    public function reduce(callable $callback, $carry = [])
+    {
         foreach ($this as $el) {
-            $carry = $callback( $carry, $el );
+            $carry = $callback($carry, $el);
         }
         return $carry;
->>>>>>> RepositoriesChanges:src/Persistent/DataSet.php
+
     }
 
     /**
