@@ -10,7 +10,7 @@ namespace Arrow\ORM\Extensions;
 
 
 use Arrow\ORM\Persistent\Criteria;
-use Arrow\ORM\PersistentFactory;
+use Arrow\ORM\Persistent\PersistentFactory;
 
 trait Sortable {
 
@@ -19,7 +19,7 @@ trait Sortable {
     public function updateSorting(){
         $class = static::getClass();
         $find = Criteria::query($class)
-            ->c(self::$EXTENSION_SORTABLE_FIELD, null)
+            ->c(self::$EXTENSION_SORTABLE_FIELD, [null,0], Criteria::C_IN)
             ->find();
 
 
@@ -30,7 +30,7 @@ trait Sortable {
     }
 
 
-    public function moveUp()
+    public function moveUp( Criteria $additionalCriteria = null )
     {
         $this->updateSorting();
 
@@ -39,7 +39,8 @@ trait Sortable {
             $thisSort = $this->getPKey();
 
         $class = static::getClass();
-        $prev = Criteria::query($class)
+        $criteria = $additionalCriteria !== null ? $additionalCriteria: Criteria::query($class);
+        $prev = $criteria
             ->c(self::$EXTENSION_SORTABLE_FIELD, $thisSort, Criteria::C_LESS_THAN)
             ->order(self::$EXTENSION_SORTABLE_FIELD, Criteria::O_DESC)
             ->findFirst();
@@ -56,7 +57,7 @@ trait Sortable {
         return $this;
     }
 
-    public function moveDown()
+    public function moveDown(Criteria $additionalCriteria = null)
     {
 
         $this->updateSorting();
@@ -66,7 +67,8 @@ trait Sortable {
             $thisSort = $this->getPKey();
 
         $class = static::getClass();
-        $prev = Criteria::query($class)
+        $criteria = $additionalCriteria !== null ? $additionalCriteria : Criteria::query($class);
+        $prev = $criteria
             ->c(self::$EXTENSION_SORTABLE_FIELD, $thisSort, Criteria::C_GREATER_THAN)
             ->order(self::$EXTENSION_SORTABLE_FIELD, Criteria::O_ASC)
             ->findFirst();
