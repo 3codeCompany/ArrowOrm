@@ -68,6 +68,27 @@ class PersistentObject extends BaseTracker implements \ArrayAccess, \JsonSeriali
         return $obj;
     }
 
+    /**
+     * @param $data Array Object data for create/update
+     * @return PersistentObject
+     * @throws Exception
+     */
+    public static function createOrUpdate($data)
+    {
+        $obj = null;
+        if (isset($data[static::$PKeyField])) {
+            $obj = self::get()
+                ->findByKey($data[static::$PKeyField]);
+        }
+
+        if ($obj) {
+            $obj->setValues($data)->save();
+        } else {
+            $obj = self::create($data);
+        }
+        return $obj;
+    }
+
     public static function createSet($data)
     {
         foreach ($data as $row) {
