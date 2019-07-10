@@ -688,6 +688,7 @@ class MysqlDBInterface implements DBInterface
 
         $query = str_replace("{order}", $orderSql, $query);
         $query = str_replace("{limit}", $this->limitToSql($criteria), $query);
+        $query = str_replace("{groupBy}", $this->groupsToSQL("", $criteria), $query);
 
 
         $query = preg_replace("/\`(.+?)`\.`(.+?)\`/", "$1.$2", $query);
@@ -695,7 +696,6 @@ class MysqlDBInterface implements DBInterface
 
         /*{conditions}
         {order} {limit}*/
-
 
         return $query;
     }
