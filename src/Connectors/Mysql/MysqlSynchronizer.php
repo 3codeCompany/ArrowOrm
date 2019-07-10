@@ -721,7 +721,8 @@ class MysqlSynchronizer extends AbstractSynchronizer
             $tmp[] = "`{$col["column"]}`" . ($col["size"] ? "(${col["size"]})" : "");
 
         }
-        $sql = "ALTER TABLE `{$table->getTableName()}` ADD " . ($index->getType() == "UNIQUE" ? "UNIQUE " : "") . " KEY `{$index->getName()}`(" . implode(",", $tmp) . ") USING " . $index->getKind();
+
+        $sql = "ALTER TABLE `{$table->getTableName()}` ADD " . (strtoupper($index->getType()) == "UNIQUE" ? "UNIQUE " : "") . " KEY `{$index->getName()}`(" . implode(",", $tmp) . ") USING " . $index->getKind();
 
         $this->update($sql);
         return $sql;
