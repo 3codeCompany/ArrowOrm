@@ -700,5 +700,9 @@ class MysqlDBInterface implements DBInterface
         return $query;
     }
 
+    public function bulkInsert($model, $data ){
+        exit("insertuje");
+    }
+
 
 }
