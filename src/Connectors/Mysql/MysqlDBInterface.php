@@ -587,7 +587,8 @@ class MysqlDBInterface implements DBInterface
                     if ($order[0][0] == "'") {
                         $tmp = trim($order[0], "'");
                     } elseif (strpos($order[0], "raw:") === 0) {
-                        $tmp = $this->connection->quote(substr($order[0], 4));
+                        // !!!important raw str is not escaped
+                        $tmp = substr($order[0], 4);
                     } else {
                         if (strpos($order[0], ":") == false) {
                             $alias = false;
