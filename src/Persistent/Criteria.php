@@ -571,7 +571,7 @@ class Criteria
     public function addOrderBy($column, $orderType = self::O_ASC, $order_priority = '')
     {
         $orderType = strtoupper($orderType);
-        if (strpos($column, ",") !== false) {
+        if (strpos($column, ",") !== false && strpos($column, "raw:") === false) {
             $tmp = explode(",", $column);
             foreach ($tmp as $column) {
                 $this->data['order'][] = array($column, $orderType, $order_priority);
