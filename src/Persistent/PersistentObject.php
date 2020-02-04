@@ -61,8 +61,8 @@ class PersistentObject extends BaseTracker implements \ArrayAccess, \JsonSeriali
      */
     public static function create($data)
     {
-        $class = static::$class;
-        $obj = new $class($data);
+        //$class = static::$class;
+        $obj = new static($data);
         $obj->save(true);
         $obj->modified = true;
         return $obj;

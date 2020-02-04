@@ -187,7 +187,7 @@ EOT;
                  * @throws Exception
                  */
                 public static function get(){
-                    return {$className}_Criteria::query(static::getClass());
+                    return {$className}_Criteria::query(static::class);
                 }
 EOT;
 

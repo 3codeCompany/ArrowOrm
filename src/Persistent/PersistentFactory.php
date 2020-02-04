@@ -108,7 +108,7 @@ class PersistentFactory
             $object[$pk] = $id;
 
             //synchronize object with database
-            $dbData = self::getByKey($id, $object::getClass())->getData();
+            $dbData = self::getByKey($id, get_class($object))->getData();
 
             $object->setValues($dbData);
 

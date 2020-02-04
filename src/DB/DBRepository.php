@@ -188,7 +188,8 @@ class DBRepository implements LoggerAwareInterface
 
     public function insert(PersistentObject $object)
     {
-        return $this->connectionInterface->insert($object::getTable(), $object->getData(), $object::getClass()::getPKeyField());
+
+        return $this->connectionInterface->insert($object::getTable(), $object->getData(), $object::getPKeyField());
     }
 
     public function update($data, Criteria $criteria)
@@ -200,6 +201,7 @@ class DBRepository implements LoggerAwareInterface
 
     public function delete(PersistentObject $object)
     {
+
         return $this->connectionInterface->delete($object::getTable(), Criteria::query($object::getClass())->c($object::getPKField(), $object->getPKey()));
     }
 
