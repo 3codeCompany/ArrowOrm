@@ -16,7 +16,6 @@ use JsonSerializable;
  */
 class Schema implements JsonSerializable
 {
-
     /**
      * Database schema version
      *
@@ -40,10 +39,20 @@ class Schema implements JsonSerializable
 
     private $encoding = "utf8_unicode_ci";
 
+    private $classMapping = [];
 
     public static function fromFiles($files)
     {
+    }
 
+    public function addClassMapping($original, $target)
+    {
+        $this->classMapping[$original] = $target;
+    }
+
+    public function getClassMapping($original)
+    {
+        return isset($this->classMapping[$original]) ? $this->classMapping[$original] : false;
     }
 
     public function getTables()
@@ -58,7 +67,6 @@ class Schema implements JsonSerializable
      */
     public function getTableByClass($class)
     {
-
         foreach ($this->tables as $table) {
             if ($table->getClass() == $class || $table->getClass() == "\\" . $class) {
                 return $table;
@@ -122,7 +130,6 @@ class Schema implements JsonSerializable
         }
 
         $this->version = $v;
-
     }
 
     /**

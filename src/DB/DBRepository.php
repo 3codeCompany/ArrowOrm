@@ -182,7 +182,7 @@ class DBRepository implements LoggerAwareInterface
         $class = $criteria->getModel();
         $res = $this->connectionInterface->select($class::getTable(), $criteria);
 
-        return new DataSet($class::getClass(), $res, $criteria, $asSimpleData);
+        return new DataSet($class, $res, $criteria, $asSimpleData);
     }
 
 

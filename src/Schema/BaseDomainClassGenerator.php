@@ -46,7 +46,7 @@ class BaseDomainClassGenerator implements ISchemaTransformer
         foreach ($schema->getTables() as $table) {
             $namespace = str_replace("\\", "_", $table->getNamespace());
 
-            file_put_contents($this->targetDir . DIRECTORY_SEPARATOR . "ORM" . ($namespace ? "_" . $namespace : "") . "_" . $table->getClassName() . ".php", $this->generateClass($table));
+            file_put_contents($this->targetDir . DIRECTORY_SEPARATOR . "ORM" . ($namespace ? "_" . $namespace : "") . "_" . $table->getClassName() . ".php", $this->generateClass($table, $schema));
         }
     }
 
@@ -57,10 +57,12 @@ class BaseDomainClassGenerator implements ISchemaTransformer
      *
      * @return string
      */
-    public function generateClass(Table $table)
+    public function generateClass(Table $table, Schema $schema)
     {
         $namespace = str_replace("\\", "_", $table->getNamespace());
         $className = "ORM" . ($namespace ? "_" . $namespace : "") . "_{$table->getClassName()}";
+
+
 
         $str = "";
         $this->pl("<?php namespace Arrow\ORM;", $str);
@@ -87,6 +89,12 @@ EOT;
             $this->pl("}", $criteriaMethods, 1);
         }
 
+        $mapping = $schema->getClassMapping($table->getClass());
+        $returnedClass = $mapping?$mapping:"\\{$table->getNamespace()}\\{$table->getClassName()}";
+
+
+
+
         $criteria = <<< EOT
 use Arrow\ORM\Persistent\Criteria;
 use Arrow\ORM\Persistent\PersistentObject;
@@ -94,8 +102,8 @@ use Arrow\ORM\Persistent\PersistentObject;
  * Class {$className}_Criteria
  * @package Arrow\ORM
  * @method \\Arrow\\ORM\\Persistent\\DataSet|\\{$table->getNamespace()}\\{$table->getClassName()}[] find()
- * @method \\{$table->getNamespace()}\\{$table->getClassName()} findByKey()
- * @method \\{$table->getNamespace()}\\{$table->getClassName()} findFirst()
+ * @method {$returnedClass} findByKey()
+ * @method {$returnedClass} findFirst()
  */
 class {$className}_Criteria extends Criteria {
     $criteriaMethods
