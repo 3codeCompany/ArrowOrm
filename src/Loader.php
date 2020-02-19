@@ -12,13 +12,13 @@ use Arrow\ORM\DB\DBManager;
  */
 class Loader
 {
-
     private static $classes = null;
+    private static $dir;
 
-    public static function registerAutoload()
+    public static function registerAutoload($dir)
     {
+        self::$dir = $dir;
         spl_autoload_register(array(__CLASS__, 'includeClass'));
-
     }
 
     //@codeCoverageIgnoreStart
@@ -32,11 +32,12 @@ class Loader
     public static function includeClass($class)
     {
         if (strpos($class, "Arrow\\ORM\\ORM_") === 0) {
-            DBManager::getDefaultRepository()->loadBaseModel($class);
+            $file = self::$dir . DIRECTORY_SEPARATOR . str_replace(array("Arrow\\ORM\\", "\\"), array("", "_"), $class) . ".php";
+            if (file_exists($file)) {
+                require $file;
+            } else {
+                DBManager::getDefaultRepository()->loadBaseModel($class);
+            }
         }
-
-
     }
-
-
 }
