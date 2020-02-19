@@ -22,8 +22,8 @@
 
     },
     "require": {
-        "psr/log": "^1.0",
-        "monolog/monolog": "^1.24",
-        "symfony/yaml": "^4.2"
+        "psr/log": "^1.1",
+        "monolog/monolog": "^2.0",
+        "symfony/yaml": "^5.0"
     }
 }
