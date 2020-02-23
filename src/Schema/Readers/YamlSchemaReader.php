@@ -288,7 +288,7 @@ class YamlSchemaReader
             if ($field == null) {
                 throw new SchemaException("Field declared in index not found in table (field: '{$field}', table: '{$table->getTableName()}')");
             } else {
-                $index->addFieldName($field->getName(), $_field["size"] ?? $field->getSize());
+                $index->addFieldName($field->getName(), $_field["size"] ?? null);
             }
         }
         return $index;
