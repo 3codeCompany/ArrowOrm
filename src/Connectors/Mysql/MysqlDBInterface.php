@@ -339,7 +339,11 @@ class MysqlDBInterface implements DBInterface
                     }
                 }
 
-                $value = $this->valueToSQL($cond['value'], $condition, isset($cond["function"]) ? $cond["function"] : null);
+                $value = $this->valueToSQL(
+                    $cond['value'],
+                    $condition,
+                    isset($cond["function"]) ? $cond["function"] : null
+                );
                 if ($condition != Criteria::C_CUSTOM && $condition != Criteria::START) {
                     if (!is_array($value)) {
                         $value = $this->getSqlValue($value);
@@ -483,17 +487,16 @@ class MysqlDBInterface implements DBInterface
 
         foreach ($criteriaData['columns'] as $col) {
             $raw = false;
-
-            if ($col['column'][0] == "(" || $col['custom'] == true) {
+            if (strpos($col['column'], "raw:") === 0) {
+                $tmp = substr($col['column'], 4);
+                $raw = true;
+            } elseif ($col['column'][0] == "(" || $col['custom'] == true) {
                 $tmp = $col['column'];
             } elseif ($col['column'][0] == "'") {
                 $tmp = trim($col['column'], "'");
             } elseif ($joined && strpos($col['column'], ":") !== false) {
                 $_tmp = explode(":", $col['column']);
                 $tmp = "`" . $_tmp[0] . "`" . ".`" . $_tmp[1] . "`";
-            } elseif (strncmp($col['column'], "raw:", 4) === 0) {
-                $tmp = substr($col['column'], 4);
-                $raw = true;
             } else {
                 $tmp = "{$tableName}.{$col['column']}";
             }
@@ -685,7 +688,7 @@ class MysqlDBInterface implements DBInterface
 
     public function bulkInsert($model, $data)
     {
-        if (empty($data)) {
+        if(empty($data)){
             return;
         }
 
@@ -719,6 +722,7 @@ class MysqlDBInterface implements DBInterface
         }
 
         $query .= ";\nALTER TABLE `{$model::getTable()}` ENABLE KEYS;";
+
 
         $this->connection->exec($query);
     }
