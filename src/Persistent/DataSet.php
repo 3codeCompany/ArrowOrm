@@ -191,7 +191,13 @@ class DataSet implements \Iterator, \ArrayAccess, \Countable, \Serializable, \Js
 
     public function toPureArray()
     {
-        return $this->toArray(self::AS_ARRAY);
+        $result = $this->toArray(self::AS_ARRAY);
+        foreach($result as &$row){
+            if(!is_array($row)){
+                $row = $row->jsonSerialize();
+            }
+        }
+        return $result;
     }
 
     public function __toString()
