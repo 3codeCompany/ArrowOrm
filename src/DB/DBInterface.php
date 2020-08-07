@@ -29,4 +29,6 @@ interface DBInterface extends LoggerAwareInterface
 
     public function applyCriteriaToQuery($query, Criteria $criteria);
 
+    public function bulkInsert($model, $data);
+
 }

@@ -6,8 +6,10 @@ use Arrow\ORM\DB\DBManager;
 
 class BulkInsert
 {
-    private $buffor = [];
-    private $bufforSize = 500;
+    private $buffer = [];
+    private $bufferSize = 500;
+    private $onFlushCallback = false;
+    private $insertCount = 0;
 
     private $model;
 
@@ -18,15 +20,31 @@ class BulkInsert
 
     public function insert($data)
     {
-        $this->buffor[] = $data;
-        if(count($this->buffor) >= $this->bufforSize){
+        $this->buffer[] = $data;
+        if (count($this->buffer) >= $this->bufferSize) {
             $this->flush();
         }
     }
 
-    public function flush(){
-        DBManager::getDefaultRepository()->getConnectionInterface()->bulkInsert($this->model, $this->buffor);
-        $this->buffor = [];
+    public function flush()
+    {
+        DBManager::getDefaultRepository()
+            ->getConnectionInterface()
+            ->bulkInsert($this->model, $this->buffer);
+        $this->buffer = [];
+        $this->insertCount++;
+        if ($this->onFlushCallback) {
+            ($this->onFlushCallback)($this->insertCount * $this->bufferSize);
+        }
+    }
 
+    public function setBufferSize(int $size)
+    {
+        $this->bufferSize = $size;
+    }
+
+    public function setOnFlussCallbac($callback)
+    {
+        $this->onFlushCallback = $callback;
     }
 }
