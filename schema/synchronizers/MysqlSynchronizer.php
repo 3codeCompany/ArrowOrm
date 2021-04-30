@@ -142,7 +142,7 @@ class MysqlSynchronizer extends AbstractSynchronizer
      */
     public function resolveMismatch(AbstractMismatch $mismatch, $mode = AbstractSynchronizer::MODE_SCHEMA_TO_DS)
     {
-
+        return true;
         $schema = $mismatch->schema;
         $resolvedMismatch = new ResolvedMismatch();
         $resolvedMismatch->mismatch = $mismatch;
