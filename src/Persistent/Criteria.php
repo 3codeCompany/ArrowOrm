@@ -1,6 +1,5 @@
 <?php namespace Arrow\ORM\Persistent;
 
-
 /**
  * @author     Pawel Giemza
  * @version    1.0
@@ -26,31 +25,31 @@ use Symfony\Component\Cache\Adapter\TagAwareAdapter;
  */
 class Criteria
 {
-    const C_EQUAL = '=='; /*     * <Equality condition (SQL: = ) */
-    const C_NOT_EQUAL = '!='; /*     * <Inequality condition (SQL: != ) */
-    const C_GREATER_EQUAL = '>='; /*     * <Greater or equal condition (SQL: >= ) */
-    const C_GREATER_THAN = '>'; /*     * <Greater than condition (SQL: > ) */
-    const C_LESS_EQUAL = '<='; /*     * <Less or equal condition (SQL: <= ) */
-    const C_LESS_THAN = '<'; /*     * <Greater than condition (SQL: < ) */
+    const C_EQUAL = "=="; /*     * <Equality condition (SQL: = ) */
+    const C_NOT_EQUAL = "!="; /*     * <Inequality condition (SQL: != ) */
+    const C_GREATER_EQUAL = ">="; /*     * <Greater or equal condition (SQL: >= ) */
+    const C_GREATER_THAN = ">"; /*     * <Greater than condition (SQL: > ) */
+    const C_LESS_EQUAL = "<="; /*     * <Less or equal condition (SQL: <= ) */
+    const C_LESS_THAN = "<"; /*     * <Greater than condition (SQL: < ) */
 
-    const C_IN = 'IN'; /*     * <In operator (SQL: IN) <br /> Note: this operator requires $value to be an array */
-    const C_NOT_IN = 'NOT IN'; /*     * <Not In operator (SQL: NOT IN)<br /> Note: this operator requires $value to be an array */
-    const C_BETWEEN = 'BETWEEN'; /*     * <Between operator (SQL: BETWEEN) <br /> Note: this operator requires $value to be 2 element array */
+    const C_IN = "IN"; /*     * <In operator (SQL: IN) <br /> Note: this operator requires $value to be an array */
+    const C_NOT_IN = "NOT IN"; /*     * <Not In operator (SQL: NOT IN)<br /> Note: this operator requires $value to be an array */
+    const C_BETWEEN = "BETWEEN"; /*     * <Between operator (SQL: BETWEEN) <br /> Note: this operator requires $value to be 2 element array */
 
-    const C_LIKE = 'LIKE'; /*     * <Like operator (SQL: LIKE) */
-    const C_NOT_LIKE = 'NOT LIKE'; /*     * <Not Like operator (SQL: NOT LIKE) */
+    const C_LIKE = "LIKE"; /*     * <Like operator (SQL: LIKE) */
+    const C_NOT_LIKE = "NOT LIKE"; /*     * <Not Like operator (SQL: NOT LIKE) */
 
-    const C_BIT_OR = '|'; /*     * <Bit OR */
-    const C_BIT_AND = '&'; /*     * <Bit AND */
-    const C_BIT_XOR = '^'; /*     * <Bit XOR */
+    const C_BIT_OR = "|"; /*     * <Bit OR */
+    const C_BIT_AND = "&"; /*     * <Bit AND */
+    const C_BIT_XOR = "^"; /*     * <Bit XOR */
 
-    const C_OR_GROUP = 'OR'; /*     * <Start nested OR group */
-    const C_AND_GROUP = 'AND'; /*     * <Start nested AND group */
+    const C_OR_GROUP = "OR"; /*     * <Start nested OR group */
+    const C_AND_GROUP = "AND"; /*     * <Start nested AND group */
 
-    const C_CUSTOM = 'CUSTOM'; /*     * Custom condition */
+    const C_CUSTOM = "CUSTOM"; /*     * Custom condition */
 
-    const START = 'START'; /* Start nested group (internal use only) */
-    const END = 'END'; /* End nested group (internal use only) */
+    const START = "START"; /* Start nested group (internal use only) */
+    const END = "END"; /* End nested group (internal use only) */
 
     const O_DESC = "DESC"; /*     * <Descending order */
     const O_ASC = "ASC"; /*     * <Ascending order */
@@ -68,7 +67,6 @@ class Criteria
     const F_MONTH = "MONTH"; /*     * <Date: Month */
     const F_DAY = "DAY"; /*     * <Date: Day */
 
-
     const J_LEFT = "LEFT";
     const J_OUTER = "OUTER";
 
@@ -77,18 +75,13 @@ class Criteria
      *
      * @var Array
      */
-    private $data = [
-        "group",
-        "conditions" => [],
-        "order" => [],
-        "limit" => [],
-    ];
+    private $data = ["group", "conditions" => [], "order" => [], "limit" => []];
     /**
      * List of nested groups (AND/OR)
      *
      * @var Array
      */
-    private $groups = array(self::C_AND_GROUP);
+    private $groups = [self::C_AND_GROUP];
     /**
      * Information whether this is first or last condition in group
      * required for correct nesting of conditions
@@ -106,7 +99,6 @@ class Criteria
      */
     private $cacheConfig = null;
 
-
     /**
      * Constructor.
      *
@@ -123,12 +115,15 @@ class Criteria
             $this->mainModelPKField = $model::getPKField();
 
             foreach ($this->mainModelFields as $field) {
-                $this->data['columns'][$field] = ['column' => $field, 'alias' => $field, 'aggregate' => false, 'custom' => false];
+                $this->data["columns"][$field] = [
+                    "column" => $field,
+                    "alias" => $field,
+                    "aggregate" => false,
+                    "custom" => false,
+                ];
             }
         }
-
     }
-
 
     /**
      *
@@ -147,9 +142,24 @@ class Criteria
         return $criteria;
     }
 
-
-    public function _join($class, array $on, $as = false, $fields = null, $type = self::J_LEFT, $customCondition = false)
+    public function removeJoin($as)
     {
+        unset($this->data["joins"][$as]);
+    }
+
+    public function getJoins()
+    {
+        return $this->data["joins"] ?? [];
+    }
+
+    public function _join(
+        $class,
+        array $on,
+        $as = false,
+        $fields = null,
+        $type = self::J_LEFT,
+        $customCondition = false
+    ) {
         $as = $as ? $as : $class;
         $fields = $fields ? $fields : $class::getFields();
 
@@ -159,11 +169,10 @@ class Criteria
             "on" => $on,
             "type" => $type,
             "fields" => $fields,
-            "customCondition" => $customCondition
+            "customCondition" => $customCondition,
         ];
         return $this;
     }
-
 
     /**
      *
@@ -173,14 +182,13 @@ class Criteria
      *
      * @return static
      */
-    public function c($column, $value, $condition = self::C_EQUAL, $function = null, $functionData = array())
+    public function c($column, $value, $condition = self::C_EQUAL, $function = null, $functionData = [])
     {
         $this->addCondition($column, $value, $condition, $function, $functionData);
         return $this;
     }
 
-
-    public function cOR($column, $value, $condition = self::C_EQUAL, $function = null, $functionData = array())
+    public function cOR($column, $value, $condition = self::C_EQUAL, $function = null, $functionData = [])
     {
         $this->_or();
         $this->addCondition($column, $value, $condition, $function, $functionData);
@@ -195,9 +203,8 @@ class Criteria
 
     protected function addConnector($type)
     {
-        $this->data['conditions'][] = $type;
+        $this->data["conditions"][] = $type;
     }
-
 
     /**
      *
@@ -207,18 +214,28 @@ class Criteria
      *
      * @return static
      */
-    public function order($column, $orderType = self::O_ASC, $order_priority = '')
+    public function order($column, $orderType = self::O_ASC, $order_priority = "")
     {
         $this->addOrderBy($column, $orderType, $order_priority);
         return $this;
     }
 
-
     public function count()
     {
         //todo ładniej obudować
-        if ($this->isAggregated() || !empty($this->data['group'])) {
-            return DBManager::getDefaultRepository()->getConnectionInterface()->getDB()->query("SELECT FOUND_ROWS()")->fetchColumn();
+        if ($this->isAggregated() || !empty($this->data["group"])) {
+            return DBManager::getDefaultRepository()
+                ->getConnectionInterface()
+                ->getDB()
+                ->query("SELECT FOUND_ROWS()")
+                ->fetchColumn();
+        }
+
+        $joins = $this->getJoins();
+        foreach($joins as $alias => $join){
+            if($join["type"] == self::J_LEFT){
+                $this->removeJoin($alias);
+            }
         }
 
         return $this->getOneValue("id", "count");
@@ -232,22 +249,22 @@ class Criteria
     public function getOneValue($field, $function)
     {
         $c = clone $this;
-        $c->setColumns(array());
+        $c->setColumns([]);
         $c->removeOrder();
         $c->setLimit(0, 1);
         $c->addColumn($field, "tmp", $function);
         $result = PersistentFactory::getByCriteria($c)->fetch();
+
         if ($result === null) {
             return 0;
         }
         return reset($result);
     }
 
-
     //todo przy joinach nie chce działać
     public function setColumns($arrColumns)
     {
-        $this->data['columns'] = array();
+        $this->data["columns"] = [];
 
         foreach ($arrColumns as $key => $column) {
             if (!is_numeric($key)) {
@@ -258,7 +275,7 @@ class Criteria
         }
 
         /*if(empty($arrColumns))
-            $this->addColumn($this->mainModelPKField);*/
+         $this->addColumn($this->mainModelPKField);*/
 
         return $this;
     }
@@ -278,7 +295,7 @@ class Criteria
 
     public function findAsFieldArray($field, $fieldToIndex = null)
     {
-        if($this->cacheConfig){
+        if ($this->cacheConfig) {
             throw new Exception("'findAsFieldArray' Not implemented with cache");
         }
 
@@ -297,9 +314,9 @@ class Criteria
         //$result->setCacheEnabled(false);
         $tmp = [];
         //cached
-        if(is_array($result) ){
+        if (is_array($result)) {
             return $result;
-        }else {
+        } else {
             while ($row = $result->fetch()) {
                 if ($fieldToIndex) {
                     if ($fieldToIndex === true) {
@@ -321,7 +338,6 @@ class Criteria
         return $this;
     }
 
-
     /**
      * @param bool $fieldAsIndex If no $fieldToIndex specyfied used Pkey
      * @param bool $fieldToIndex
@@ -330,7 +346,6 @@ class Criteria
      */
     public function find($fieldAsIndex = false, $fieldToIndex = null)
     {
-
         $item = null;
         $adapter = null;
         if ($this->cacheConfig !== null) {
@@ -341,8 +356,6 @@ class Criteria
             $item = $adapter->getItem($this->cacheConfig[0]);
             $item->tag($this->cacheConfig[3]);
             $item->expiresAfter($this->cacheConfig[1]);
-
-
         }
 
         if ($item !== null && $item->isHit()) {
@@ -354,7 +367,7 @@ class Criteria
             $result = PersistentFactory::getByCriteria($this);
 
             if ($fieldAsIndex) {
-                $tmp = array();
+                $tmp = [];
                 if ($fieldToIndex == null) {
                     foreach ($result as $r) {
                         $tmp[$r->getPKey()] = $r;
@@ -381,13 +394,13 @@ class Criteria
         }
 
         return $result;
-
     }
-
 
     public function findFirst()
     {
-        return $this->limit(0, 1)->find()->fetch();
+        return $this->limit(0, 1)
+            ->find()
+            ->fetch();
     }
 
     public function findByKey($key)
@@ -397,7 +410,6 @@ class Criteria
         }
         return PersistentFactory::getByKey($key, $this->mainModel);
     }
-
 
     /**
      * Add single condition to Criteria object
@@ -415,23 +427,23 @@ class Criteria
             $this->firstlast = true;
             $value = null;
             $this->groups = array_slice($this->groups, 0, count($this->groups) - 1);
-
         }
 
-        if (count($this->groups) && $this->firstlast == false) { //_add AND/OR between conditions
-            $last = end($this->data['conditions']);
+        if (count($this->groups) && $this->firstlast == false) {
+            //_add AND/OR between conditions
+            $last = end($this->data["conditions"]);
             if (!is_string($last)) {
                 $this->addConnector(end($this->groups));
             }
         }
 
         /*$last = end($this->data['conditions']);
-        if( $last && $last["value"] != null )*/
+         if( $last && $last["value"] != null )*/
 
-        $this->data['conditions'][] = [
-            'column' => $column,
-            'value' => $value,
-            'condition' => $condition,
+        $this->data["conditions"][] = [
+            "column" => $column,
+            "value" => $value,
+            "condition" => $condition,
             //'function' => $function,
             //'functionData' => $functionData
         ];
@@ -442,14 +454,12 @@ class Criteria
         } else {
             $this->firstlast = false;
         }
-
     }
 
     public function addSearchCondition($columns, $value, $condition = self::C_LIKE)
     {
-
         if (!is_array($columns)) {
-            $columns = array($columns);
+            $columns = [$columns];
         }
         $this->startGroup();
         foreach ($columns as $index => $column) {
@@ -472,18 +482,17 @@ class Criteria
      *
      * @return
      */
-    public function addCustomCondition($value, $tables = array())
+    public function addCustomCondition($value, $tables = [])
     {
-        if (count($this->groups) && $this->firstlast == false) //_add AND/OR between conditions
-        {
+        if (count($this->groups) && $this->firstlast == false) {
+            //_add AND/OR between conditions
             $this->addConnector(end($this->groups));
         }
 
-        $this->data['conditions'][] = array('column' => '', 'value' => $value, 'condition' => 'CUSTOM', 'tables' => $tables);
+        $this->data["conditions"][] = ["column" => "", "value" => $value, "condition" => "CUSTOM", "tables" => $tables];
         $this->firstlast = false;
 
         return $this;
-
     }
 
     /**
@@ -502,7 +511,12 @@ class Criteria
     {
         if (!in_array($column, $this->mainModelFields)) {
             if (strpos($column, ":") != false || $column[0] == "(") {
-                $this->data['columns'][$alias ? $alias : $column] = ['column' => $column, 'alias' => $alias ? $alias : $column, 'aggregate' => $aggregate, "custom" => false];
+                $this->data["columns"][$alias ? $alias : $column] = [
+                    "column" => $column,
+                    "alias" => $alias ? $alias : $column,
+                    "aggregate" => $aggregate,
+                    "custom" => false,
+                ];
             } else {
                 /*
                     jeśli zewnętrzna kontrolka chce dodać kolumnę to trzeba sprawdzić również aliasy już dodane w criteri wczesniej ale
@@ -517,8 +531,12 @@ class Criteria
             }
         }
 
-        $this->data['columns'][$alias ? $alias : $column] = ['column' => $column, 'alias' => $alias ? $alias : $column, 'aggregate' => $aggregate, 'custom' => $custom];
-
+        $this->data["columns"][$alias ? $alias : $column] = [
+            "column" => $column,
+            "alias" => $alias ? $alias : $column,
+            "aggregate" => $aggregate,
+            "custom" => $custom,
+        ];
 
         if (!empty($alias)) {
             $this->removeColumn($column);
@@ -530,7 +548,6 @@ class Criteria
 
         return $this;
     }
-
 
     /**
      * Remove single column from criteria column list.
@@ -544,11 +561,11 @@ class Criteria
     public function removeColumn($columns)
     {
         //\Arrow\Logger::log("[ArrowCriteria] Column(s) removed from selection; $columns",\Arrow\Logger::EL_INFO);
-        $data = explode(',', $columns);
+        $data = explode(",", $columns);
         foreach ($data as $column) {
             $column = trim($column);
-            if (!empty($column) && isset($this->data['columns'][$column])) {
-                unset($this->data['columns'][$column]);
+            if (!empty($column) && isset($this->data["columns"][$column])) {
+                unset($this->data["columns"][$column]);
             }
         }
     }
@@ -562,29 +579,28 @@ class Criteria
     public function addGroupBy($column)
     {
         //\Arrow\Logger::log("[ArrowCriteria] Group by \"{$column}\" added to selection; ",\Arrow\Logger::EL_INFO);
-        $this->data['group'][] = $column;
+        $this->data["group"][] = $column;
         $this->aggregates = true;
         return $this;
     }
 
     //---------------------------------------------------------------------------------------------------------
-    public function addOrderBy($column, $orderType = self::O_ASC, $order_priority = '')
+    public function addOrderBy($column, $orderType = self::O_ASC, $order_priority = "")
     {
         $orderType = strtoupper($orderType);
         if (strpos($column, ",") !== false && strpos($column, "raw:") === false) {
             $tmp = explode(",", $column);
             foreach ($tmp as $column) {
-                $this->data['order'][] = array($column, $orderType, $order_priority);
+                $this->data["order"][] = [$column, $orderType, $order_priority];
             }
         } else {
-            $this->data['order'][] = array($column, $orderType, $order_priority);
+            $this->data["order"][] = [$column, $orderType, $order_priority];
         }
-
     }
 
     public function removeOrder()
     {
-        $this->data['order'] = array();
+        $this->data["order"] = [];
         return $this;
     }
 
@@ -592,13 +608,13 @@ class Criteria
     public function setLimit($offset, $lenght)
     {
         //\Arrow\Logger::log("[ArrowCriteria] Limit set to: \"{$offset} {$lenght}\" ",\Arrow\Logger::EL_INFO);
-        $this->data['limit'] = array($offset, $lenght);
+        $this->data["limit"] = [$offset, $lenght];
     }
 
     public function clearLimit()
     {
         //\Arrow\Logger::log("[ArrowCriteria] Limit set to: \"{$offset} {$lenght}\" ",\Arrow\Logger::EL_INFO);
-        unset($this->data['limit']);
+        unset($this->data["limit"]);
         return $this;
     }
 
@@ -616,7 +632,6 @@ class Criteria
         return $this;
     }
 
-
     //---------------------------------------------------------------------------------------------------------
     public function getModel()
     {
@@ -627,7 +642,7 @@ class Criteria
     public function getData()
     {
         if ($this->aggregates == false) {
-            if (!isset($this->data['columns'][$this->mainModelPKField])) {
+            if (!isset($this->data["columns"][$this->mainModelPKField])) {
                 $this->addColumn($this->mainModelPKField);
             }
         }
@@ -642,13 +657,12 @@ class Criteria
 
     public function removeConditionByOffset($offset)
     {
-        unset($this->data['conditions'][$offset]);
-        if (isset($this->data['conditions'][$offset + 1])) {
-            unset($this->data['conditions'][$offset + 1]);
+        unset($this->data["conditions"][$offset]);
+        if (isset($this->data["conditions"][$offset + 1])) {
+            unset($this->data["conditions"][$offset + 1]);
         }
         return $this;
     }
-
 
     /* checks whether condition exists in criteria
      * set $value or $condiiton_type to null to ignore it
@@ -671,18 +685,17 @@ class Criteria
 
     public function isGroupBy()
     {
-        return !empty($this->data['group']);
+        return !empty($this->data["group"]);
     }
 
     public function removeGrouping()
     {
-        $this->data['group'] = array();
+        $this->data["group"] = [];
         return $this;
     }
 
     public function stringify()
     {
-
         //return print_r($this->data, 1);
         return json_encode($this->data);
         //return "criteria string";
@@ -690,9 +703,10 @@ class Criteria
 
     public function applyToQuery(string $query): string
     {
-        return DBManager::getDefaultRepository()->getConnectionInterface()->applyCriteriaToQuery($query, $this);
+        return DBManager::getDefaultRepository()
+            ->getConnectionInterface()
+            ->applyCriteriaToQuery($query, $this);
     }
-
 }
 
 ?>
