@@ -231,9 +231,19 @@ class Criteria
                 ->fetchColumn();
         }
 
+        $conditionAliases = [];
+        foreach ($this->data["conditions"] as $condition) {
+
+            if (isset($condition["column"])) {
+                if (strpos($condition["column"], ":") !== false) {
+                    $conditionAliases[] = explode(":", $condition["column"])[0];
+                }
+            }
+        }
+
         $joins = $this->getJoins();
-        foreach($joins as $alias => $join){
-            if($join["type"] == self::J_LEFT){
+        foreach ($joins as $alias => $join) {
+            if ($join["type"] == self::J_LEFT && !in_array($alias, $conditionAliases)) {
                 $this->removeJoin($alias);
             }
         }
