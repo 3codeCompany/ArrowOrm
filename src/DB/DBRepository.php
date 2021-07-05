@@ -119,9 +119,7 @@ class DBRepository implements LoggerAwareInterface
     private $getConfigCallback;
 
 
-    protected $dbInterface;
-    protected $connection;
-    private $connectionInterface;
+    private DBInterface $connectionInterface;
     /**
      * @var AbstractAdapter
      */
@@ -348,6 +346,7 @@ class DBRepository implements LoggerAwareInterface
     public function setLogger(LoggerInterface $logger)
     {
         $this->logger = $logger;
+        $this->connectionInterface->setLogger($logger);
     }
 
     /**

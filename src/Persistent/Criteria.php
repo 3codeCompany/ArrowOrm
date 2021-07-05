@@ -222,18 +222,8 @@ class Criteria
 
     public function count()
     {
-        //todo ładniej obudować
-        if ($this->isAggregated() || !empty($this->data["group"])) {
-            return DBManager::getDefaultRepository()
-                ->getConnectionInterface()
-                ->getDB()
-                ->query("SELECT FOUND_ROWS()")
-                ->fetchColumn();
-        }
-
         $conditionAliases = [];
         foreach ($this->data["conditions"] as $condition) {
-
             if (isset($condition["column"])) {
                 if (strpos($condition["column"], ":") !== false) {
                     $conditionAliases[] = explode(":", $condition["column"])[0];
@@ -245,6 +235,13 @@ class Criteria
         foreach ($joins as $alias => $join) {
             if ($join["type"] == self::J_LEFT && !in_array($alias, $conditionAliases)) {
                 $this->removeJoin($alias);
+                if (isset($this->data["group"])) {
+                    foreach ($this->data["group"] as $index => $column) {
+                        if (strpos($column, $alias . ":") === 0) {
+                            unset($this->data["group"][$index]);
+                        }
+                    }
+                }
             }
         }
 

@@ -118,7 +118,7 @@ class MysqlDBInterface implements DBInterface
 
         $q =
             "SELECT " .
-            ($criteria->isAggregated() ? 'SQL_CALC_FOUND_ROWS ' : '') .
+            //($criteria->isAggregated() ? 'SQL_CALC_FOUND_ROWS ' : '') .
             $this->columnsToSQL($criteria) .
             "\nFROM $table $joins" .
             "\nWHERE " .
@@ -129,6 +129,7 @@ class MysqlDBInterface implements DBInterface
             $this->orderToSql($table, $criteria) .
             "\n" .
             $this->limitToSql($criteria);
+
         return $this->connection->query($q);
     }
 
