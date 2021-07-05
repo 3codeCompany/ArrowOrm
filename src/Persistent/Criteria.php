@@ -245,6 +245,15 @@ class Criteria
             }
         }
 
+        if (isset($this->data["group"])) {
+            foreach ($this->data["group"] as $index => $column) {
+                if ($column === $this->mainModelPKField  ) {
+                    unset($this->data["group"][$index]);
+                }
+            }
+        }
+
+
         return $this->getOneValue("id", "count");
     }
 
