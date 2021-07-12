@@ -126,12 +126,12 @@ class DBRepository implements LoggerAwareInterface
     private $cacheAdapter;
 
     public function __construct(
-        DBInterface $dbInferface,
+        DBInterface $dbInterface,
         string $generatedClassesDir,
         callable $getConfigCallback
     )
     {
-        $this->connectionInterface = $dbInferface;
+        $this->connectionInterface = $dbInterface;
         $this->generatedClassesDir = $generatedClassesDir;
         $this->getConfigCallback = $getConfigCallback;
 
