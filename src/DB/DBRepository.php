@@ -249,8 +249,7 @@ class DBRepository implements LoggerAwareInterface
 
         $synchronizer->setPreventRemoveActions($this->isPreventRemoveActions());
         $synchronizer->setForeignKeysIgnore(true);
-        $mismaches = $synchronizer->getSchemaMismatches($schema, $this->connection);
-        return $mismaches;
+        return $synchronizer->getSchemaMismatches($schema, $this->connectionInterface);
 
     }
 
@@ -276,8 +275,8 @@ class DBRepository implements LoggerAwareInterface
 
             $synchronizer->setPreventRemoveActions($this->isPreventRemoveActions());
             $synchronizer->setForeignKeysIgnore(true);
-            $mismaches = $synchronizer->getSchemaMismatches($schema, $this->connection);
-            foreach ($mismaches as $m) {
+            $mismatches = $synchronizer->getSchemaMismatches($schema, $this->connectionInterface);
+            foreach ($mismatches as $m) {
                 $synchronizer->resolveMismatch($m);
             }
         }
