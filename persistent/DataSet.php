@@ -165,6 +165,11 @@ class DataSet implements \Iterator, \ArrayAccess, \Countable, \Serializable, \Js
         return $this->mappedArray;
     }
 
+    public function toPureArray()
+    {
+        return $this->toArray(self::AS_ARRAY);
+    }
+
     public function __toString()
     {
         return "ORM Dataset, class:" . $this->class . ", objects: " . $this->count();
