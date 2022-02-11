@@ -75,7 +75,7 @@ class Criteria
      *
      * @var Array
      */
-    private $data = ["group", "conditions" => [], "order" => [], "limit" => []];
+    private $data = ["group", "conditions" => [], "order" => [], "limit" => [], "joinSeparator" => ":"];
     /**
      * List of nested groups (AND/OR)
      *
@@ -152,14 +152,8 @@ class Criteria
         return $this->data["joins"] ?? [];
     }
 
-    public function _join(
-        $class,
-        array $on,
-        $as = false,
-        $fields = null,
-        $type = self::J_LEFT,
-        $customCondition = false
-    ) {
+    public function _join($class, array $on, $as = false, $fields = null, $type = self::J_LEFT, $customCondition = false)
+    {
         $as = $as ? $as : $class;
         $fields = $fields ? $fields : $class::getFields();
 
@@ -247,12 +241,11 @@ class Criteria
 
         if (isset($this->data["group"])) {
             foreach ($this->data["group"] as $index => $column) {
-                if ($column === $this->mainModelPKField  ) {
+                if ($column === $this->mainModelPKField) {
                     unset($this->data["group"][$index]);
                 }
             }
         }
-
 
         return $this->getOneValue("id", "count");
     }
@@ -722,6 +715,12 @@ class Criteria
         return DBManager::getDefaultRepository()
             ->getConnectionInterface()
             ->applyCriteriaToQuery($query, $this);
+    }
+
+    public function setJoinSeparator($separator)
+    {
+        $this->data["joinSeparator"] = $separator;
+        return $this;
     }
 }
 

@@ -39,6 +39,8 @@ class MysqlDBInterface implements DBInterface
     /** @var LoggerInterface */
     private $logger;
 
+    public static $joinSeparator = ":";
+
     public function __construct($connection)
     {
         $this->connection = $connection;
@@ -69,24 +71,21 @@ class MysqlDBInterface implements DBInterface
     public function select(string $table, Criteria $criteria)
     {
         $data = $criteria->getData();
+        self::$joinSeparator = $data["joinSeparator"];
         $joins = "";
         if (isset($data["joins"])) {
             $joins = "";
             $parseColumn = function ($column, $table) {
-                if (strpos($column, ":") == false) {
-                    if (strpos($column, "raw:") === 0) {
-                        return $this->connection->quote(substr($column, 4));
-                    } elseif ($column[0] == "'") {
+                if (strpos($column, self::$joinSeparator) == false) {
+                    if ($column[0] == "'") {
                         return $this->connection->quote(trim($column, "'"));
                     }
                     return "`{$table}`.`{$column}`";
+                } elseif (strpos($column, "raw:") === 0) {
+                    return $this->connection->quote(substr($column, 4));
                 } else {
-                    $tmp = explode(":", $column);
-                    if ($tmp[0] == "raw") {
-                        return $this->connection->quote(substr($column, 4));
-                    } else {
-                        return "`" . $tmp[0] . "`" . ".`" . $tmp[1] . "`";
-                    }
+                    $tmp = explode(self::$joinSeparator, $column);
+                    return "`" . $tmp[0] . "`" . ".`" . $tmp[1] . "`";
                 }
             };
             foreach ($data["joins"] as $j) {
@@ -98,7 +97,7 @@ class MysqlDBInterface implements DBInterface
 
                 $joins .=
                     "\n " .
-                    ($j["type"] == Criteria::J_OUTER ? '' : $j["type"]) .
+                    ($j["type"] == Criteria::J_OUTER ? "" : $j["type"]) .
                     " JOIN `" .
                     $j["class"]::getTable() .
                     "` as `" .
@@ -129,6 +128,9 @@ class MysqlDBInterface implements DBInterface
             $this->orderToSql($table, $criteria) .
             "\n" .
             $this->limitToSql($criteria);
+
+        print_r($q);
+
 
         return $this->connection->query($q);
     }
@@ -186,7 +188,7 @@ class MysqlDBInterface implements DBInterface
         $first = true;
 
         foreach ($data as $column => $value) {
-            $query .= ($first ? '' : ', ') . "`$column`" . '=';
+            $query .= ($first ? "" : ", ") . "`$column`" . "=";
 
             if (is_null($value)) {
                 $query .= "NULL";
@@ -286,8 +288,10 @@ class MysqlDBInterface implements DBInterface
         $criteriaData = $criteria->getData();
         $conditionString = "";
 
-        if (isset($criteriaData['conditions'])) {
-            foreach ($criteriaData['conditions'] as $cond) {
+        self::$joinSeparator = $criteriaData["joinSeparator"];
+
+        if (isset($criteriaData["conditions"])) {
+            foreach ($criteriaData["conditions"] as $cond) {
                 $conditionString .= "\n\t";
 
                 /*if(empty($cond["column"]))
@@ -298,14 +302,14 @@ class MysqlDBInterface implements DBInterface
                     continue;
                 }
 
-                $condition = $cond['condition'];
+                $condition = $cond["condition"];
 
-                if ($cond['column'] && $cond['column'][0] == "'") {
-                    $column = trim($cond['column'], "'");
-                } elseif (strpos($cond['column'], "raw:") === 0) {
-                    $column = substr($cond['column'], 4);
+                if ($cond["column"] && $cond["column"][0] == "'") {
+                    $column = trim($cond["column"], "'");
+                } elseif (strpos($cond["column"], "raw:") === 0) {
+                    $column = substr($cond["column"], 4);
                 } else {
-                    $column = "`" . $cond['column'] . "`";
+                    $column = "`" . $cond["column"] . "`";
 
                     if (
                         $table != false &&
@@ -315,7 +319,7 @@ class MysqlDBInterface implements DBInterface
                         $condition != Criteria::END
                     ) {
                         if (isset($aliases[$table])) {
-                            $column = $aliases[$table]["alias"] . '.' . $column;
+                            $column = $aliases[$table]["alias"] . "." . $column;
                         } else {
                             if (strpos($column, ":") == false) {
                                 $column = "{$table}.{$column}";
@@ -336,15 +340,11 @@ class MysqlDBInterface implements DBInterface
 
                     //if function passed
                     if (isset($cond["function"]) && $cond["function"]) {
-                        $column = $this->functionToSQL($column, $cond['function'], $cond["functionData"]);
+                        $column = $this->functionToSQL($column, $cond["function"], $cond["functionData"]);
                     }
                 }
 
-                $value = $this->valueToSQL(
-                    $cond['value'],
-                    $condition,
-                    isset($cond["function"]) ? $cond["function"] : null
-                );
+                $value = $this->valueToSQL($cond["value"], $condition, isset($cond["function"]) ? $cond["function"] : null);
                 if ($condition != Criteria::C_CUSTOM && $condition != Criteria::START) {
                     if (!is_array($value)) {
                         $value = $this->getSqlValue($value);
@@ -384,13 +384,13 @@ class MysqlDBInterface implements DBInterface
                         break;
                     case Criteria::C_IN:
                         //_add null handling
-                        $valuesIn = array();
+                        $valuesIn = [];
                         $null = false;
                         foreach ($value as $addVal) {
-                            if ($addVal === 'NULL') {
+                            if ($addVal === "NULL") {
                                 $null = true;
                             } else {
-                                if (trim($addVal) !== '') {
+                                if (trim($addVal) !== "") {
                                     $valuesIn[] = $addVal;
                                 }
                             }
@@ -398,7 +398,7 @@ class MysqlDBInterface implements DBInterface
                         if (!empty($valuesIn)) {
                             $addCondition = $column . " IN (" . implode(", ", $valuesIn) . ")";
                         } else {
-                            $addCondition = ' 0 ';
+                            $addCondition = " 0 ";
                         }
                         if ($null) {
                             $addCondition = "(" . $addCondition . "OR {$column} IS NULL " . ")";
@@ -409,10 +409,10 @@ class MysqlDBInterface implements DBInterface
                         $valuesIn = [];
                         $null = false;
                         foreach ($value as $addVal) {
-                            if ($addVal === 'NULL') {
+                            if ($addVal === "NULL") {
                                 $null = true;
                             } else {
-                                if (trim($addVal) !== '') {
+                                if (trim($addVal) !== "") {
                                     $valuesIn[] = $addVal;
                                 }
                             }
@@ -420,7 +420,7 @@ class MysqlDBInterface implements DBInterface
                         if (!empty($valuesIn)) {
                             $addCondition = $column . " NOT IN (" . implode(", ", $valuesIn) . ")";
                         } else {
-                            $addCondition = ' 1 ';
+                            $addCondition = " 1 ";
                         }
                         if ($null) {
                             $addCondition = "(" . $addCondition . "AND {$column} IS NOT NULL " . ")";
@@ -469,7 +469,7 @@ class MysqlDBInterface implements DBInterface
         }
 
         if (empty($conditionString)) {
-            $conditionString = '1';
+            $conditionString = "1";
         }
 
         return $conditionString;
@@ -484,40 +484,49 @@ class MysqlDBInterface implements DBInterface
         $class = $criteria->getModel();
         $tableName = $class::getTable();
 
+        self::$joinSeparator = $criteriaData["joinSeparator"];
+
         $joined = isset($criteriaData["joins"]);
 
-        foreach ($criteriaData['columns'] as $col) {
+        foreach ($criteriaData["columns"] as $col) {
             $raw = false;
-            if (strpos($col['column'], "raw:") === 0) {
-                $tmp = substr($col['column'], 4);
+            if (strpos($col["column"], "raw:") === 0) {
+                $tmp = substr($col["column"], 4);
                 $raw = true;
-            } elseif ($col['column'][0] == "(" || $col['custom'] == true) {
-                $tmp = $col['column'];
-            } elseif ($col['column'][0] == "'") {
-                $tmp = trim($col['column'], "'");
-            } elseif ($joined && strpos($col['column'], ":") !== false) {
-                $_tmp = explode(":", $col['column']);
+            } elseif ($col["column"][0] == "(" || $col["custom"] == true) {
+                $tmp = $col["column"];
+            } elseif ($col["column"][0] == "'") {
+                $tmp = trim($col["column"], "'");
+            } elseif ($joined && strpos($col["column"], self::$joinSeparator) !== false) {
+                $_tmp = explode(self::$joinSeparator, $col["column"]);
                 $tmp = "`" . $_tmp[0] . "`" . ".`" . $_tmp[1] . "`";
             } else {
-                $tmp = "{$tableName}.{$col['column']}";
+                $tmp = "{$tableName}.{$col["column"]}";
             }
 
-            if (!empty($col['aggregate'])) {
+            if (!empty($col["aggregate"])) {
                 $agdistinct = "";
-                $tmp = $col['aggregate'] . "($agdistinct " . $tmp . ")";
+                $tmp = $col["aggregate"] . "($agdistinct " . $tmp . ")";
             }
 
-            $columns .= ($first ? "\t" : ",\n\t") . ($raw ? $tmp : $tmp . ' AS `' . $col['alias'] . '`');
+            $columns .= ($first ? "\t" : ",\n\t") . ($raw ? $tmp : $tmp . " AS `" . $col["alias"] . "`");
             $first = false;
         }
 
+        //print "-----------" . PHP_EOL . PHP_EOL;
         if ($joined) {
             foreach ($criteriaData["joins"] as $j) {
                 foreach ($j["fields"] as $field) {
-                    $columns .= ",\n\t`" . $j["as"] . '`.`' . $field . '` as `' . $j["as"] . ':' . $field . '`';
+                    $columns .= ",\n\t`" . $j["as"] . "`.`" . $field . "` as `" . $j["as"] . self::$joinSeparator . $field . "`";
                 }
             }
+            //print_r($criteriaData["joins"]);
         }
+
+        //print PHP_EOL . self::$joinSeparator . PHP_EOL;
+        //print_r($criteriaData["columns"]);
+
+        //print_r($columns);
 
         return " \n\t" . $columns . "\n";
     }
@@ -525,17 +534,19 @@ class MysqlDBInterface implements DBInterface
     public function groupsToSQL($tableName, $criteria, $aliases = false)
     {
         // table alliases -  array of tables whose columns have to added under special aliases (ad also many times)
-        $groupBy = '';
+        $groupBy = "";
 
         $group_empty = false;
         $criteriaData = $criteria->getData();
         $className = $criteria->getModel();
 
+        self::$joinSeparator = $criteriaData["joinSeparator"];
+
         if ($aliases && isset($aliases[$tableName])) {
-            if (strpos($className, ':') !== false) {
-                $className = explode('[', $className);
+            if (strpos($className, ":") !== false) {
+                $className = explode("[", $className);
                 $className = end($className);
-                $className = str_replace(array('::', ']'), array('_', ''), $className);
+                $className = str_replace(["::", "]"], ["_", ""], $className);
             }
             if (isset($aliases[$tableName][$className])) {
                 $tableName = $aliases[$tableName][$className];
@@ -549,17 +560,17 @@ class MysqlDBInterface implements DBInterface
                 $groupBy = "\n GROUP BY \n\t";
                 $group_empty = true;
             }
-            $tmp = array();
-            foreach ($criteriaData['group'] as $group) {
+            $tmp = [];
+            foreach ($criteriaData["group"] as $group) {
                 if (strpos($group, "raw:") === 0) {
                     $tmp[] = substr($group, 4);
                 } elseif ($group[0] == "'") {
                     $tmp[] = "'" . trim($group, "'") . "'";
                 } else {
-                    if (strpos($group, ":") == false) {
+                    if (strpos($group, self::$joinSeparator) == false) {
                         $tmp[] = "{$tableName}.{$group}";
                     } else {
-                        $_tmp = explode(":", $group);
+                        $_tmp = explode(self::$joinSeparator, $group);
                         $tmp[] = "`" . $_tmp[0] . "`" . ".`" . $_tmp[1] . "`";
                     }
                 }
@@ -576,12 +587,14 @@ class MysqlDBInterface implements DBInterface
     private function orderToSql($tableName, Criteria $criteria)
     {
         $criteriaData = $criteria->getData();
-        $orderBy = '';
-        if (isset($criteriaData['order']) && !empty($criteriaData['order'])) {
-            $ord = array();
 
-            foreach ($criteriaData['order'] as $order) {
-                $tmp = '';
+        self::$joinSeparator = $criteriaData["joinSeparator"];
+        $orderBy = "";
+        if (isset($criteriaData["order"]) && !empty($criteriaData["order"])) {
+            $ord = [];
+
+            foreach ($criteriaData["order"] as $order) {
+                $tmp = "";
                 if ($order[0] == "RAND()" || $order[0] == "RAND") {
                     $tmp = "RAND()";
                 } else {
@@ -591,10 +604,10 @@ class MysqlDBInterface implements DBInterface
                         // !!!important raw str is not escaped
                         $tmp = substr($order[0], 4);
                     } else {
-                        if (strpos($order[0], ":") == false) {
+                        if (strpos($order[0], self::$joinSeparator) == false) {
                             $alias = false;
                             //sprawdzanie czy nie sortujemy wg aliasu
-                            foreach ($criteriaData['columns'] as $col) {
+                            foreach ($criteriaData["columns"] as $col) {
                                 if ($col["alias"] == $order[0]) {
                                     $tmp = "`{$order[0]}`";
                                     $alias = true;
@@ -604,7 +617,7 @@ class MysqlDBInterface implements DBInterface
                                 $tmp = "{$tableName}.{$order[0]}";
                             }
                         } else {
-                            $_tmp = explode(":", $order[0]);
+                            $_tmp = explode(self::$joinSeparator, $order[0]);
                             $tmp = "`" . $_tmp[0] . "`" . ".`" . $_tmp[1] . "`";
                         }
                     }
@@ -612,7 +625,7 @@ class MysqlDBInterface implements DBInterface
                     $tmp .= " " . $order[1];
                 }
 
-                if (!isset($order[2]) || $order[2] === '') {
+                if (!isset($order[2]) || $order[2] === "") {
                     $ord[] = $tmp;
 
                     //to może psuć w przypadku kiedy będą łaczone riorytety i niepriorytety (ale to nie powinno sie nigdy zdażyc)
@@ -633,8 +646,8 @@ class MysqlDBInterface implements DBInterface
     private function limitToSql(Criteria $criteria)
     {
         $criteriaData = $criteria->getData();
-        if (isset($criteriaData['limit']) && !empty($criteriaData['limit'])) {
-            return "\n LIMIT {$criteriaData['limit'][0]}, {$criteriaData['limit'][1]}";
+        if (isset($criteriaData["limit"]) && !empty($criteriaData["limit"])) {
+            return "\n LIMIT {$criteriaData["limit"][0]}, {$criteriaData["limit"][1]}";
         } else {
             return "";
         }
@@ -653,7 +666,7 @@ class MysqlDBInterface implements DBInterface
             "columns" => $columns,
             "conditions" => $this->conditionsToSQL($criteria),
             "order" => $this->orderToSql("", $criteria),
-            "limit" => $this->limitToSql($criteria)
+            "limit" => $this->limitToSql($criteria),
         ];
     }
 
@@ -689,14 +702,11 @@ class MysqlDBInterface implements DBInterface
 
     public function bulkInsert($model, $data)
     {
-        if(empty($data)){
+        if (empty($data)) {
             return;
         }
 
-        $query =
-            "\n\nALTER TABLE `{$model::getTable()}` DISABLE KEYS;\n INSERT INTO {$model::getTable()} (`" .
-            implode("`, `", array_keys($data[0])) .
-            "`) ";
+        $query = "\n\nALTER TABLE `{$model::getTable()}` DISABLE KEYS;\n INSERT INTO {$model::getTable()} (`" . implode("`, `", array_keys($data[0])) . "`) ";
         $query .= "\n VALUES  ";
 
         foreach ($data as $index => $row) {
@@ -723,7 +733,6 @@ class MysqlDBInterface implements DBInterface
         }
 
         $query .= ";\nALTER TABLE `{$model::getTable()}` ENABLE KEYS;";
-
 
         $this->connection->exec($query);
     }
