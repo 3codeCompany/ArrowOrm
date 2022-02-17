@@ -88,6 +88,7 @@ class MysqlDBInterface implements DBInterface
                     return "`" . $tmp[0] . "`" . ".`" . $tmp[1] . "`";
                 }
             };
+
             foreach ($data["joins"] as $j) {
                 $tmp = [];
                 foreach ($j["on"] as $field => $foreignField) {
@@ -128,9 +129,6 @@ class MysqlDBInterface implements DBInterface
             $this->orderToSql($table, $criteria) .
             "\n" .
             $this->limitToSql($criteria);
-
-        print_r($q);
-
 
         return $this->connection->query($q);
     }
