@@ -319,19 +319,19 @@ class MysqlDBInterface implements DBInterface
                         if (isset($aliases[$table])) {
                             $column = $aliases[$table]["alias"] . "." . $column;
                         } else {
-                            if (strpos($column, ":") == false) {
+                            if (strpos($column, self::$joinSeparator) == false) {
                                 $column = "{$table}.{$column}";
                             } else {
-                                $tmp = explode(":", $column);
+                                $tmp = explode(self::$joinSeparator, $column);
                                 $column = $tmp[0] . "`" . ".`" . $tmp[1];
                             }
                         }
                     } else {
                         if (!$table) {
-                        } elseif (strpos($column, ":") == false) {
+                        } elseif (strpos($column, self::$joinSeparator) == false) {
                             $column = "{$table}.{$column}";
                         } else {
-                            $tmp = explode(":", $column);
+                            $tmp = explode(self::$joinSeparator, $column);
                             $column = $tmp[0] . "`" . ".`" . $tmp[1];
                         }
                     }

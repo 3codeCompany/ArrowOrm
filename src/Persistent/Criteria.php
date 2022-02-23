@@ -219,8 +219,8 @@ class Criteria
         $conditionAliases = [];
         foreach ($this->data["conditions"] as $condition) {
             if (isset($condition["column"])) {
-                if (strpos($condition["column"], ":") !== false) {
-                    $conditionAliases[] = explode(":", $condition["column"])[0];
+                if (strpos($condition["column"], $this->data["joinSeparator"]) !== false) {
+                    $conditionAliases[] = explode($this->data["joinSeparator"], $condition["column"])[0];
                 }
             }
         }
@@ -231,7 +231,7 @@ class Criteria
                 $this->removeJoin($alias);
                 if (isset($this->data["group"])) {
                     foreach ($this->data["group"] as $index => $column) {
-                        if (strpos($column, $alias . ":") === 0) {
+                        if (strpos($column, $alias . $this->data["joinSeparator"]) === 0) {
                             unset($this->data["group"][$index]);
                         }
                     }
