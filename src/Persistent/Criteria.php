@@ -247,7 +247,7 @@ class Criteria
             }
         }
 
-        return $this->getOneValue("id", "count");
+        return (int) $this->getOneValue("id", "count");
     }
 
     public function sum($field)
