@@ -92,7 +92,11 @@ class MysqlDBInterface implements DBInterface
             foreach ($data["joins"] as $j) {
                 $tmp = [];
                 foreach ($j["on"] as $field => $foreignField) {
-                    $tmp[] = $parseColumn($field, $table) . " = " . $parseColumn($foreignField, $j["as"]);
+                    if(is_int($field)){
+                        $tmp[] = $foreignField;
+                    }else {
+                        $tmp[] = $parseColumn($field, $table) . " = " . $parseColumn($foreignField, $j["as"]);
+                    }
                 }
                 $on = implode(" and ", $tmp);
 
